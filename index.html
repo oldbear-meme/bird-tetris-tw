@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🐦 小鳥俄羅斯方塊 Bird Tetris</title>
+<style>
+  :root{
+    --sky1:#bfe3f2; --sky2:#e9f7e6; --ink:#3a3326; --panel:#fffdf6;
+    --accent:#7aa83c; --accent2:#e08a2e; --line:#d8cfb8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,var(--sky1) 0%, var(--sky2) 60%, #f3ecd8 100%);
+    min-height:100%;
+    display:flex; flex-direction:column; align-items:center;
+    padding:14px 10px 40px;
+  }
+  h1{font-size:clamp(20px,5vw,30px); margin:4px 0 2px; letter-spacing:1px;}
+  h1 .en{font-size:.55em; color:#6b7a52; font-weight:600;}
+  .sub{font-size:13px; color:#6f6650; margin:0 0 12px;}
+  .game{
+    display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;
+    justify-content:center; max-width:780px; width:100%;
+  }
+  .boardWrap{position:relative; border-radius:14px; overflow:hidden;
+    box-shadow:0 10px 26px rgba(60,50,20,.22); border:4px solid #fff;}
+  #board{display:block; background:#f4efe0;}
+  .panel{
+    background:var(--panel); border:2px solid var(--line); border-radius:14px;
+    padding:14px; width:250px; box-shadow:0 6px 18px rgba(60,50,20,.12);
+  }
+  .stat{display:flex; justify-content:space-between; align-items:baseline; margin:6px 0;
+    font-size:15px;}
+  .stat b{font-size:22px; color:var(--accent);}
+  .nextBox{display:flex; flex-direction:column; align-items:center; margin:8px 0 4px;
+    background:#f7f2e3; border-radius:10px; padding:8px;}
+  .nextBox span{font-size:12px; color:#7a7259; margin-bottom:4px;}
+  #next{display:block;}
+  .legend{margin-top:10px; border-top:1px dashed var(--line); padding-top:8px;}
+  .legend h3{margin:0 0 6px; font-size:14px; color:#6f6650;}
+  .legend .row{display:flex; gap:8px; align-items:center; margin:6px 0; font-size:12px; line-height:1.35;}
+  .swatch{width:34px; height:34px; flex:0 0 34px; border-radius:8px;
+    background:#f6f2e6; border:1px solid #e6dfca;}
+  .controls{margin-top:10px; font-size:12px; color:#6f6650; line-height:1.6;}
+  .controls kbd{background:#efe9d8; border:1px solid #d8cfb8; border-radius:5px;
+    padding:1px 6px; font-family:inherit; font-size:11px;}
+  button.big{
+    width:100%; margin-top:10px; padding:11px; font-size:16px; font-weight:700;
+    color:#fff; background:linear-gradient(180deg,#8cbb46,#6f9a33);
+    border:none; border-radius:10px; cursor:pointer; letter-spacing:1px;
+    box-shadow:0 4px 0 #5d8329;}
+  button.big:active{transform:translateY(2px); box-shadow:0 2px 0 #5d8329;}
+  .overlay{position:absolute; inset:0; background:rgba(40,34,20,.78); color:#fff;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:20px; backdrop-filter:blur(2px);}
+  .overlay.show{display:flex;}
+  .overlay h2{margin:0 0 6px; font-size:30px;}
+  .overlay p{margin:4px 0; font-size:15px; opacity:.92; line-height:1.6;}
+  .overlay button{margin-top:14px;}
+  .touch{display:none; gap:10px; margin-top:14px; width:100%; max-width:360px;}
+  .touch button{flex:1; padding:16px 0; font-size:20px; border-radius:12px;
+    border:2px solid var(--line); background:var(--panel); color:var(--ink);
+    box-shadow:0 3px 0 #d8cfb8;}
+  .touch button:active{transform:translateY(2px); box-shadow:0 1px 0 #d8cfb8;}
+  @media (hover:none) and (pointer:coarse){ .touch{display:flex;} }
+  .flash{position:absolute; top:0; left:0; right:0; text-align:center;
+    font-size:14px; font-weight:700; color:#fff; padding:6px;
+    background:linear-gradient(180deg,rgba(30,90,180,.92),rgba(30,90,180,0));
+    pointer-events:none; opacity:0; transition:opacity .25s;}
+  .flash.show{opacity:1;}
+  footer{margin-top:22px; font-size:11px; color:#8a8267;}
+</style>
+</head>
+<body>
+  <h1>🐦 小鳥俄羅斯方塊 <span class="en">Bird Tetris</span></h1>
+  <p class="sub">白頭翁・麻雀・綠繡眼的築巢冒險 — 小心搶食的椋鳥與叼走幼鳥的藍鵲！</p>
+
+  <div class="game">
+    <div class="boardWrap">
+      <canvas id="board"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="overlay show" id="overlay">
+        <canvas id="cover" width="220" height="170" style="margin-bottom:4px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));"></canvas>
+        <h2 id="ovTitle">準備好了嗎？</h2>
+        <p id="ovText">用方向鍵移動與旋轉小鳥方塊，<br>排滿一整列就能消除！</p>
+        <button class="big" id="ovBtn" style="width:200px">開始遊戲</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="stat"><span>分數</span><b id="score">0</b></div>
+      <div class="stat"><span>消除列數</span><b id="lines">0</b></div>
+      <div class="stat"><span>等級</span><b id="level">1</b></div>
+      <div class="nextBox">
+        <span>下一個</span>
+        <canvas id="next" width="120" height="120"></canvas>
+      </div>
+      <button class="big" id="pauseBtn">暫停 (P)</button>
+
+      <div class="legend">
+        <h3>🐤 角色圖鑑（依真實特徵繪製）</h3>
+        <div class="row"><canvas class="swatch" id="legBulbul"></canvas><div><b>白頭翁</b>：黑頭配明顯<b>白色後頸斑</b>，背橄欖綠、腹白。</div></div>
+        <div class="row"><canvas class="swatch" id="legSparrow"></canvas><div><b>麻雀</b>：栗褐色頭頂、白臉頰上有<b>黑斑</b>。</div></div>
+        <div class="row"><canvas class="swatch" id="legWhiteeye"></canvas><div><b>綠繡眼</b>：黃綠身體 + 醒目<b>白色眼圈</b>。</div></div>
+        <div class="row"><canvas class="swatch" id="legWorm"></canvas><div><b>蚯蚓</b>：長在堆疊表面，消除含蚯蚓的列可<b>大量加分</b>。</div></div>
+        <div class="row"><canvas class="swatch" id="legDumb"></canvas><div><b>大笨鳥</b>：圓胖笨拙、慢慢找蚯蚓吃，好對付。</div></div>
+        <div class="row"><canvas class="swatch" id="legStarling"></canvas><div><b>黑領椋鳥</b>：白頭<b>黑頸環</b>，移動超快搶蚯蚓！</div></div>
+        <div class="row"><canvas class="swatch" id="legMagpie"></canvas><div><b>台灣藍鵲</b>：黑頭紅嘴、寶藍身體與<b>超長藍尾</b>，會叼走幼鳥。</div></div>
+      </div>
+
+      <div class="controls">
+        <b>操作：</b><br>
+        <kbd>←</kbd><kbd>→</kbd> 移動　<kbd>↓</kbd>/<kbd>空白</kbd> 直接落下<br>
+        <kbd>↑</kbd>/<kbd>X</kbd> 旋轉（單鈕循環）　<kbd>P</kbd> 暫停
+      </div>
+    </div>
+  </div>
+
+  <div class="touch">
+    <button id="tLeft">◀</button>
+    <button id="tRot">↻ 旋轉</button>
+    <button id="tDrop">⤓ 落下</button>
+    <button id="tRight">▶</button>
+  </div>
+
+  <footer>用 ❤️ 與一群小鳥做成的開源小遊戲 · 直接用瀏覽器打開即可遊玩</footer>
+
+<script>
+"use strict";
+(function(){
+/* ============ 基本設定 ============ */
+const COLS = 10, ROWS = 20, CELL = 32;
+const board = document.getElementById('board');
+const nextCv = document.getElementById('next');
+const ctx = board.getContext('2d');
+const nctx = nextCv.getContext('2d');
+const TAU = Math.PI*2;
+
+const DPR = Math.min(window.devicePixelRatio||1, 2);
+board.width = COLS*CELL*DPR; board.height = ROWS*CELL*DPR;
+board.style.width = COLS*CELL+'px'; board.style.height = ROWS*CELL+'px';
+ctx.scale(DPR,DPR);
+nextCv.width = 120*DPR; nextCv.height = 120*DPR; nctx.scale(DPR,DPR);
+
+/* ============ 主角鳥種調色盤（真實特徵） ============ */
+// 0 白頭翁, 1 麻雀, 2 綠繡眼
+const SPECIES = [
+  { name:'白頭翁', cell:'#e9e6db', back:'#7e8366', wing:'#676b50', belly:'#f4f1e7', head:'#2b2b2b', beak:'#2e2e2e', mark:'bulbul' },
+  { name:'麻雀',   cell:'#f0e2cf', back:'#9e6a3c', wing:'#7e5128', belly:'#ecdfc8', head:'#7c4a24', beak:'#33312c', mark:'sparrow' },
+  { name:'綠繡眼', cell:'#e6efc9', back:'#9cbf3c', wing:'#82a32d', belly:'#eef4d8', head:'#a6c742', beak:'#c79a35', mark:'whiteeye' },
+];
+const WORM = 'worm';
+
+/* ============ 方塊形狀 ============ */
+const SHAPES = {
+  I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  O:[[1,1],[1,1]],
+  T:[[0,1,0],[1,1,1],[0,0,0]],
+  S:[[0,1,1],[1,1,0],[0,0,0]],
+  Z:[[1,1,0],[0,1,1],[0,0,0]],
+  J:[[1,0,0],[1,1,1],[0,0,0]],
+  L:[[0,0,1],[1,1,1],[0,0,0]],
+};
+const KEYS = Object.keys(SHAPES);
+
+/* ============ 遊戲狀態 ============ */
+let grid, piece, nextPiece, score, lines, level, dropMs, dropAcc, last;
+let running=false, paused=false, over=false;
+let bag=[];
+let entities=[];
+let wormTimer=0, npcStarlingDone=false, npcDumbDone=false, magpieTimer=0;
+
+function newGrid(){ return Array.from({length:ROWS},()=>Array(COLS).fill(null)); }
+function refillBag(){ bag = KEYS.slice(); for(let i=bag.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[bag[i],bag[j]]=[bag[j],bag[i]];} }
+function nextKey(){ if(!bag.length) refillBag(); return bag.pop(); }
+function makePiece(key){
+  const shape = SHAPES[key].map(r=>r.slice());
+  const sp = (Math.random()*3)|0;
+  const col = ((COLS - shape[0].length)/2)|0;
+  return {key, shape, species:sp, row:0, col};
+}
+function reset(){
+  grid=newGrid(); score=0; lines=0; level=1; dropMs=900; dropAcc=0;
+  entities=[]; wormTimer=4500; magpieTimer=22000;
+  npcStarlingDone=false; npcDumbDone=false;
+  over=false; paused=false;
+  piece=makePiece(nextKey()); nextPiece=makePiece(nextKey());
+  updateHUD(); drawNext();
+}
+
+/* ============ 碰撞與旋轉 ============ */
+function collide(shape,row,col){
+  for(let r=0;r<shape.length;r++)for(let c=0;c<shape[r].length;c++){
+    if(!shape[r][c]) continue;
+    const R=row+r, C=col+c;
+    if(C<0||C>=COLS||R>=ROWS) return true;
+    if(R>=0 && grid[R][C]) return true;
+  }
+  return false;
+}
+function rotate(shape,dir){
+  const N=shape.length, out=Array.from({length:N},()=>Array(N).fill(0));
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(dir>0) out[c][N-1-r]=shape[r][c]; else out[N-1-r][c]=shape[r][c];
+  }
+  return out;
+}
+function tryRotate(dir){
+  if(piece.key==='O') return;
+  const rot=rotate(piece.shape,dir);
+  for(const k of [0,-1,1,-2,2]){
+    if(!collide(rot,piece.row,piece.col+k)){ piece.shape=rot; piece.col+=k; return; }
+  }
+}
+
+/* ============ 鎖定、消列、蚯蚓 ============ */
+function lockPiece(){
+  let gameover=false;
+  for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++){
+    if(!piece.shape[r][c]) continue;
+    const R=piece.row+r, C=piece.col+c;
+    if(R<0){ gameover=true; continue; }
+    grid[R][C]={t:'bird', sp:piece.species};
+  }
+  beep(220,0.05);
+  clearLines();
+  if(gameover){ endGame(); return; }
+  piece=nextPiece; nextPiece=makePiece(nextKey()); drawNext();
+  if(collide(piece.shape,piece.row,piece.col)) endGame();
+}
+function clearLines(){
+  let cleared=0, wormBonus=0;
+  for(let r=ROWS-1;r>=0;r--){
+    if(grid[r].every(cell=>cell)){
+      for(const cell of grid[r]) if(cell && cell.t===WORM) wormBonus++;
+      grid.splice(r,1); grid.unshift(Array(COLS).fill(null));
+      cleared++; r++;
+    }
+  }
+  if(cleared){
+    const base=[0,100,300,500,800][cleared]||800;
+    let gain=base*level;
+    if(wormBonus){ gain += wormBonus*200*level; showFlash('🪱 小鳥們吃到蚯蚓了！ +'+(wormBonus*200*level),'#3a8a3a'); beep(660,0.08,'triangle'); }
+    score+=gain; lines+=cleared;
+    const newLevel=1+Math.floor(lines/10);
+    if(newLevel>level){ level=newLevel; dropMs=Math.max(110, 900-(level-1)*70); }
+    beep(440+cleared*60,0.09,'square');
+    updateHUD();
+  }
+}
+function spawnWorm(){
+  const cols=[...Array(COLS).keys()].sort(()=>Math.random()-0.5);
+  for(const c of cols){
+    let top=ROWS; for(let r=0;r<ROWS;r++){ if(grid[r][c]){ top=r; break; } }
+    const wr=top-1;
+    if(wr>=0 && !grid[wr][c]){ grid[wr][c]={t:WORM}; return; }
+    if(top===ROWS){ grid[ROWS-1][c]={t:WORM}; return; }
+  }
+}
+
+/* ============ NPC：巡邏吃蚯蚓 ============ */
+function surfaceTop(c){ for(let r=0;r<ROWS;r++){ if(grid[r][c]) return r; } return ROWS; }
+function findNearestWormCol(fromCol){
+  let best=-1, bestD=1e9;
+  for(let c=0;c<COLS;c++){
+    let has=false; for(let r=0;r<ROWS;r++) if(grid[r][c]&&grid[r][c].t===WORM){has=true;break;}
+    if(has){ const d=Math.abs(c-fromCol); if(d<bestD){bestD=d;best=c;} }
+  }
+  return best;
+}
+function spawnPatrol(kind){
+  entities.push({kind, col: kind==='starling'? COLS-0.5 : 0.5,
+    speed: kind==='starling'? 7.5 : 2.2, eat:0});
+}
+function updatePatrol(e,dt){
+  const target=findNearestWormCol(e.col);
+  if(target<0){
+    e.col += Math.sin(performance.now()/600 + (e.kind==='starling'?0:3))*e.speed*dt*0.15;
+  } else {
+    const dir=Math.sign(target-e.col);
+    if(Math.abs(target-e.col)<0.12){
+      for(let r=0;r<ROWS;r++) if(grid[r][target]&&grid[r][target].t===WORM){ grid[r][target]=null; e.eat++; beep(160,0.05); showFlash((e.kind==='starling'?'黑領椋鳥':'大笨鳥')+'搶走了一條蚯蚓！','#a5512f'); break; }
+    } else { e.col += dir*e.speed*dt; }
+  }
+  e.col=Math.max(0.5,Math.min(COLS-0.5,e.col));
+}
+
+/* ============ 台灣藍鵲：飛過叼走幼鳥 ============ */
+function spawnMagpie(){
+  let minTop=ROWS; for(let c=0;c<COLS;c++) minTop=Math.min(minTop,surfaceTop(c));
+  const y=Math.max(0,minTop-1);
+  entities.push({kind:'magpie', x:-1.2, y, speed:6.5, eaten:0, last:-1});
+  showFlash('⚠️ 台灣藍鵲來襲！快保護幼鳥！','#1a5fb4');
+  beep(520,0.12,'sawtooth');
+}
+function updateMagpie(e,dt){
+  e.x += e.speed*dt;
+  const c=Math.round(e.x);
+  if(c!==e.last && c>=0 && c<COLS){
+    e.last=c;
+    if(e.eaten<3){
+      const top=surfaceTop(c);
+      if(top<ROWS && grid[top][c] && grid[top][c].t==='bird'){
+        grid[top][c]=null; e.eaten++; beep(300,0.06,'sawtooth');
+      }
+    }
+  }
+  return e.x<=COLS+1.5;
+}
+
+/* ============ 主迴圈邏輯 ============ */
+function step(dt){
+  dropAcc+=dt*1000;
+  if(dropAcc>=dropMs){ dropAcc=0; softDrop(false); }
+  wormTimer-=dt*1000;
+  if(wormTimer<=0){ spawnWorm(); wormTimer=4200 - Math.min(2000,level*180); }
+  if(!npcDumbDone && level>=2){ spawnPatrol('dumb'); npcDumbDone=true; }
+  if(!npcStarlingDone && level>=3){ spawnPatrol('starling'); npcStarlingDone=true; }
+  magpieTimer-=dt*1000;
+  if(magpieTimer<=0 && level>=3){ spawnMagpie(); magpieTimer=18000 - Math.min(8000,level*900); }
+  entities=entities.filter(e=>{
+    if(e.kind==='magpie') return updateMagpie(e,dt);
+    updatePatrol(e,dt); return true;
+  });
+}
+function softDrop(byPlayer){
+  if(collide(piece.shape,piece.row+1,piece.col)){ lockPiece(); }
+  else { piece.row++; if(byPlayer){ score+=1; updateHUD(); } }
+}
+function hardDrop(){
+  let d=0;
+  while(!collide(piece.shape,piece.row+1,piece.col)){ piece.row++; d++; }
+  score+=d*2; updateHUD(); beep(330,0.05);
+  lockPiece(); dropAcc=0;
+}
+function move(dx){ if(!collide(piece.shape,piece.row,piece.col+dx)) piece.col+=dx; }
+
+/* ============ 繪圖工具 ============ */
+function roundRect(g,x,y,w,h,r){
+  g.beginPath();
+  g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath();
+}
+
+/* 主角小鳥（側面，標出真實辨識特徵） */
+function drawBird(g,x,y,s,sp,ghost){
+  const P=SPECIES[sp];
+  g.save();
+  if(ghost) g.globalAlpha=0.30;
+  roundRect(g,x+1.5,y+1.5,s-3,s-3,Math.max(4,s*0.18));
+  g.fillStyle=P.cell; g.fill();
+  g.lineWidth=1.4; g.strokeStyle='rgba(0,0,0,.10)'; g.stroke();
+
+  const cx=x+s*0.50, cy=y+s*0.54, R=s*0.30;
+  // 尾羽
+  g.fillStyle=P.wing;
+  g.beginPath(); g.moveTo(cx-R*0.7,cy); g.lineTo(cx-R*1.75,cy-R*0.25); g.lineTo(cx-R*1.5,cy+R*0.45); g.closePath(); g.fill();
+  // 身體
+  g.beginPath(); g.ellipse(cx-R*0.15,cy,R*1.02,R*0.86,0,0,TAU); g.fillStyle=P.back; g.fill();
+  // 腹部
+  g.beginPath(); g.ellipse(cx-R*0.05,cy+R*0.30,R*0.72,R*0.56,0,0,TAU); g.fillStyle=P.belly; g.fill();
+  // 翅膀
+  g.beginPath(); g.ellipse(cx-R*0.25,cy-R*0.02,R*0.6,R*0.4,-0.35,0,TAU); g.fillStyle=P.wing; g.fill();
+  // 頭
+  const hx=cx+R*0.75, hy=cy-R*0.5, hr=s*0.205;
+  g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle=P.head; g.fill();
+
+  if(P.mark==='bulbul'){
+    // 白色後頸斑（白頭翁招牌）
+    g.beginPath(); g.arc(hx-hr*0.45,hy-hr*0.25,hr*0.52,0,TAU); g.fillStyle='#f3f1ea'; g.fill();
+    // 白喉
+    g.beginPath(); g.arc(hx+hr*0.05,hy+hr*0.95,hr*0.5,0,TAU); g.fillStyle='#f4f1e7'; g.fill();
+  }
+  if(P.mark==='sparrow'){
+    // 白臉頰 + 黑斑（麻雀招牌）
+    g.beginPath(); g.arc(hx+hr*0.10,hy+hr*0.30,hr*0.5,0,TAU); g.fillStyle='#efe7d8'; g.fill();
+    g.beginPath(); g.arc(hx+hr*0.18,hy+hr*0.34,hr*0.20,0,TAU); g.fillStyle='#2a2a2a'; g.fill();
+  }
+  // 眼睛
+  const ex=hx+hr*0.32, ey=hy-hr*0.15;
+  g.beginPath(); g.arc(ex,ey,hr*0.30,0,TAU); g.fillStyle='#fff'; g.fill();
+  g.beginPath(); g.arc(ex+hr*0.04,ey,hr*0.16,0,TAU); g.fillStyle='#1a1a1a'; g.fill();
+  if(P.mark==='whiteeye'){
+    // 白色眼圈（綠繡眼招牌）
+    g.lineWidth=Math.max(1.2,s*0.05); g.strokeStyle='#ffffff';
+    g.beginPath(); g.arc(ex,ey,hr*0.46,0,TAU); g.stroke();
+  }
+  // 喙
+  g.fillStyle=P.beak;
+  g.beginPath(); g.moveTo(hx+hr*0.78,hy+hr*0.02); g.lineTo(hx+hr*1.7,hy+hr*0.22); g.lineTo(hx+hr*0.80,hy+hr*0.42); g.closePath(); g.fill();
+  g.restore();
+}
+
+function drawWorm(g,x,y,s){
+  g.save();
+  const cy=y+s/2;
+  g.strokeStyle='#d98aa0'; g.lineWidth=s*0.22; g.lineCap='round';
+  g.beginPath();
+  for(let i=0;i<=10;i++){ const t=i/10; const px=x+s*0.18+t*s*0.64; const py=cy+Math.sin(t*Math.PI*2.5)*s*0.14; if(i===0)g.moveTo(px,py); else g.lineTo(px,py); }
+  g.stroke();
+  g.beginPath(); g.arc(x+s*0.82,cy,s*0.06,0,TAU); g.fillStyle='#222'; g.fill();
+  g.restore();
+}
+
+/* ---- NPC 向量圖（以中心點繪製，h 約等於高度） ---- */
+function drawDumb(g,cx,cy,h){
+  const R=h*0.40; g.save();
+  // 大圓身
+  g.beginPath(); g.ellipse(cx,cy+R*0.15,R*1.05,R*1.0,0,0,TAU); g.fillStyle='#a98b63'; g.fill();
+  g.beginPath(); g.ellipse(cx,cy+R*0.45,R*0.72,R*0.58,0,0,TAU); g.fillStyle='#e7d6b8'; g.fill();
+  // 翅膀
+  g.beginPath(); g.ellipse(cx-R*0.45,cy+R*0.1,R*0.5,R*0.72,0.25,0,TAU); g.fillStyle='#8f7350'; g.fill();
+  // 小頭
+  const hx=cx+R*0.45, hy=cy-R*0.7, hr=h*0.22;
+  g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#b8966b'; g.fill();
+  // 呆呆大眼
+  g.beginPath(); g.arc(hx+hr*0.15,hy-hr*0.05,hr*0.5,0,TAU); g.fillStyle='#fff'; g.fill();
+  g.beginPath(); g.arc(hx+hr*0.28,hy,hr*0.22,0,TAU); g.fillStyle='#111'; g.fill();
+  // 笨重大嘴
+  g.fillStyle='#d98a2b';
+  g.beginPath(); g.moveTo(hx+hr*0.55,hy-hr*0.05); g.lineTo(hx+hr*1.9,hy+hr*0.25); g.lineTo(hx+hr*0.55,hy+hr*0.6); g.closePath(); g.fill();
+  // 腳
+  g.strokeStyle='#caa23a'; g.lineWidth=Math.max(1.5,h*0.045);
+  g.beginPath(); g.moveTo(cx-R*0.25,cy+R*1.1); g.lineTo(cx-R*0.25,cy+R*1.4);
+  g.moveTo(cx+R*0.3,cy+R*1.1); g.lineTo(cx+R*0.3,cy+R*1.4); g.stroke();
+  g.restore();
+}
+function drawStarling(g,cx,cy,h){
+  const R=h*0.34; g.save();
+  // 尾
+  g.fillStyle='#3a3833';
+  g.beginPath(); g.moveTo(cx-R*0.7,cy); g.lineTo(cx-R*1.7,cy-R*0.2); g.lineTo(cx-R*1.5,cy+R*0.45); g.closePath(); g.fill();
+  // 身體（灰褐）
+  g.beginPath(); g.ellipse(cx-R*0.1,cy,R*1.0,R*0.82,0,0,TAU); g.fillStyle='#8d8878'; g.fill();
+  // 白腹
+  g.beginPath(); g.ellipse(cx,cy+R*0.3,R*0.7,R*0.5,0,0,TAU); g.fillStyle='#f1efe6'; g.fill();
+  // 翅
+  g.beginPath(); g.ellipse(cx-R*0.25,cy-R*0.05,R*0.55,R*0.4,-0.3,0,TAU); g.fillStyle='#6f6a5c'; g.fill();
+  // 白頭
+  const hx=cx+R*0.72,hy=cy-R*0.55,hr=h*0.2;
+  g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#f3f1ea'; g.fill();
+  // 黑色頸環（招牌）
+  g.lineWidth=hr*0.6; g.strokeStyle='#222'; g.lineCap='round';
+  g.beginPath(); g.arc(hx-hr*0.15,hy+hr*1.15,hr*0.95,-0.5,Math.PI*0.95); g.stroke();
+  // 黃色眼周
+  g.beginPath(); g.arc(hx+hr*0.18,hy,hr*0.5,0,TAU); g.fillStyle='#e8c33a'; g.fill();
+  g.beginPath(); g.arc(hx+hr*0.28,hy,hr*0.22,0,TAU); g.fillStyle='#111'; g.fill();
+  // 喙
+  g.fillStyle='#3a3a3a';
+  g.beginPath(); g.moveTo(hx+hr*0.7,hy); g.lineTo(hx+hr*1.7,hy+hr*0.2); g.lineTo(hx+hr*0.7,hy+hr*0.45); g.closePath(); g.fill();
+  // 速度線
+  g.strokeStyle='rgba(80,80,80,.5)'; g.lineWidth=h*0.04;
+  g.beginPath(); g.moveTo(cx-R*1.9,cy-R*0.2); g.lineTo(cx-R*1.3,cy-R*0.2);
+  g.moveTo(cx-R*2.0,cy+R*0.2); g.lineTo(cx-R*1.3,cy+R*0.2); g.stroke();
+  g.restore();
+}
+function drawMagpie(g,cx,cy,h){
+  const R=h*0.32; g.save();
+  // 超長藍尾（白尖）
+  g.lineCap='round';
+  g.strokeStyle='#1f5fb0'; g.lineWidth=R*0.55;
+  g.beginPath(); g.moveTo(cx-R*0.5,cy); g.quadraticCurveTo(cx-R*2.0,cy+R*0.4,cx-R*2.5,cy+R*1.4); g.stroke();
+  g.strokeStyle='#eef3f8'; g.lineWidth=R*0.55;
+  g.beginPath(); g.moveTo(cx-R*2.38,cy+R*1.05); g.lineTo(cx-R*2.52,cy+R*1.5); g.stroke();
+  // 身體寶藍
+  g.beginPath(); g.ellipse(cx,cy,R*0.95,R*0.78,0,0,TAU); g.fillStyle='#1f6fc0'; g.fill();
+  // 翅
+  g.beginPath(); g.ellipse(cx-R*0.2,cy,R*0.6,R*0.42,-0.3,0,TAU); g.fillStyle='#1858a0'; g.fill();
+  // 黑頭
+  const hx=cx+R*0.78,hy=cy-R*0.5,hr=h*0.2;
+  g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#1a1a1a'; g.fill();
+  // 黃眼
+  g.beginPath(); g.arc(hx+hr*0.25,hy-hr*0.1,hr*0.3,0,TAU); g.fillStyle='#e8c33a'; g.fill();
+  g.beginPath(); g.arc(hx+hr*0.3,hy-hr*0.1,hr*0.14,0,TAU); g.fillStyle='#111'; g.fill();
+  // 紅嘴（招牌）
+  g.fillStyle='#d12f28';
+  g.beginPath(); g.moveTo(hx+hr*0.7,hy-hr*0.05); g.lineTo(hx+hr*1.95,hy+hr*0.2); g.lineTo(hx+hr*0.7,hy+hr*0.5); g.closePath(); g.fill();
+  // 紅腳
+  g.strokeStyle='#d12f28'; g.lineWidth=Math.max(1.5,h*0.045);
+  g.beginPath(); g.moveTo(cx,cy+R*0.72); g.lineTo(cx,cy+R*1.1);
+  g.moveTo(cx+R*0.4,cy+R*0.68); g.lineTo(cx+R*0.4,cy+R*1.05); g.stroke();
+  g.restore();
+}
+
+function drawEntity(e){
+  if(e.kind==='magpie'){ drawMagpie(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*1.4); return; }
+  const col=Math.max(0,Math.min(COLS-1,Math.round(e.col)));
+  const top=surfaceTop(col);
+  const cyp=(Math.max(0,top-1))*CELL+CELL*0.5;
+  const cxp=e.col*CELL+CELL/2;
+  if(e.kind==='starling') drawStarling(ctx,cxp,cyp,CELL*1.3);
+  else drawDumb(ctx,cxp,cyp,CELL*1.3);
+}
+
+function ghostRow(){ let gr=piece.row; while(!collide(piece.shape,gr+1,piece.col)) gr++; return gr; }
+
+function render(){
+  ctx.clearRect(0,0,COLS*CELL,ROWS*CELL);
+  ctx.fillStyle='#f4efe0'; ctx.fillRect(0,0,COLS*CELL,ROWS*CELL);
+  ctx.strokeStyle='rgba(150,140,110,.12)'; ctx.lineWidth=1;
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,ROWS*CELL);ctx.stroke();}
+  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(COLS*CELL,r*CELL);ctx.stroke();}
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const cell=grid[r][c]; if(!cell) continue;
+    if(cell.t===WORM) drawWorm(ctx,c*CELL,r*CELL,CELL); else drawBird(ctx,c*CELL,r*CELL,CELL,cell.sp,false);
+  }
+  if(piece){
+    for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)
+      if(piece.shape[r][c]){ const R=piece.row+r; if(R>=0) drawBird(ctx,(piece.col+c)*CELL,R*CELL,CELL,piece.species,false); }
+  }
+  for(const e of entities) drawEntity(e);
+}
+
+function drawNext(){
+  nctx.clearRect(0,0,120,120);
+  const sh=nextPiece.shape, n=sh.length, cs=24;
+  const w=n*cs, off=(120-w)/2;
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(sh[r][c]) drawBird(nctx,off+c*cs,off+r*cs,cs,nextPiece.species,false);
+}
+
+/* ============ 圖鑑 swatch ============ */
+function drawLegend(){
+  const make=(id,fn)=>{
+    const cv=document.getElementById(id); if(!cv) return;
+    cv.width=34*DPR; cv.height=34*DPR; cv.style.width='34px'; cv.style.height='34px';
+    const c=cv.getContext('2d'); c.scale(DPR,DPR); fn(c);
+  };
+  make('legBulbul', c=>drawBird(c,1,1,32,0));
+  make('legSparrow', c=>drawBird(c,1,1,32,1));
+  make('legWhiteeye', c=>drawBird(c,1,1,32,2));
+  make('legWorm', c=>drawWorm(c,1,1,32));
+  make('legDumb', c=>drawDumb(c,15,14,30));
+  make('legStarling', c=>drawStarling(c,15,15,30));
+  make('legMagpie', c=>drawMagpie(c,20,15,30));
+}
+
+/* ============ 封面白頭翁 ============ */
+function drawCover(){
+  const cv=document.getElementById('cover'); if(!cv) return;
+  const W=220,H=170;
+  cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+  const g=cv.getContext('2d'); g.scale(DPR,DPR); g.clearRect(0,0,W,H);
+  // 晨光背景圓
+  const grd=g.createRadialGradient(110,78,8,110,85,108);
+  grd.addColorStop(0,'#fff7d9'); grd.addColorStop(1,'#cfeaf6');
+  g.fillStyle=grd; g.beginPath(); g.arc(110,84,82,0,TAU); g.fill();
+  // 樹枝
+  g.strokeStyle='#7a5230'; g.lineWidth=10; g.lineCap='round';
+  g.beginPath(); g.moveTo(34,142); g.quadraticCurveTo(120,152,196,128); g.stroke();
+  // 葉子
+  g.fillStyle='#7bbf4a'; g.save(); g.translate(172,118); g.rotate(-0.5); g.beginPath(); g.ellipse(0,0,16,7,0,0,TAU); g.fill(); g.restore();
+  g.fillStyle='#6aad3c'; g.save(); g.translate(150,128); g.rotate(0.3); g.beginPath(); g.ellipse(0,0,13,6,0,0,TAU); g.fill(); g.restore();
+  // ===== 白頭翁本體 =====
+  const cx=104, cy=92, R=46;
+  // 尾
+  g.fillStyle='#6c7152';
+  g.beginPath(); g.moveTo(cx-R*0.6,cy+R*0.2); g.lineTo(cx-R*1.5,cy+R*0.1); g.lineTo(cx-R*1.35,cy+R*0.7); g.closePath(); g.fill();
+  // 身體（橄欖綠灰）
+  g.beginPath(); g.ellipse(cx-2,cy+6,R*0.95,R*0.85,0,0,TAU); g.fillStyle='#828766'; g.fill();
+  // 白腹
+  g.beginPath(); g.ellipse(cx+2,cy+R*0.45,R*0.62,R*0.5,0,0,TAU); g.fillStyle='#f5f1e6'; g.fill();
+  // 翅膀
+  g.beginPath(); g.ellipse(cx-R*0.3,cy+2,R*0.55,R*0.4,-0.3,0,TAU); g.fillStyle='#6f7454'; g.fill();
+  g.strokeStyle='rgba(40,45,25,.25)'; g.lineWidth=2;
+  for(let i=0;i<3;i++){ g.beginPath(); g.moveTo(cx-R*0.55+i*8,cy-6); g.lineTo(cx-R*0.2+i*8,cy+10); g.stroke(); }
+  // 頭（黑）
+  const hx=cx+R*0.55, hy=cy-R*0.55, hr=R*0.5;
+  g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#2a2a2a'; g.fill();
+  // 白色頭冠 / 後頸斑（白頭翁招牌特徵）
+  g.beginPath(); g.arc(hx-hr*0.25,hy-hr*0.3,hr*0.62,0,TAU); g.fillStyle='#f6f4ec'; g.fill();
+  // 白臉頰
+  g.beginPath(); g.arc(hx+hr*0.05,hy+hr*0.5,hr*0.42,0,TAU); g.fillStyle='#eceadf'; g.fill();
+  // 眼
+  const ex=hx+hr*0.35, ey=hy-hr*0.05;
+  g.beginPath(); g.arc(ex,ey,hr*0.30,0,TAU); g.fillStyle='#fff'; g.fill();
+  g.beginPath(); g.arc(ex+1,ey,hr*0.17,0,TAU); g.fillStyle='#111'; g.fill();
+  g.beginPath(); g.arc(ex+1.6,ey-1.6,hr*0.05,0,TAU); g.fillStyle='#fff'; g.fill();
+  // 喙
+  g.fillStyle='#3a3a3a';
+  g.beginPath(); g.moveTo(hx+hr*0.8,hy+hr*0.1); g.lineTo(hx+hr*1.6,hy+hr*0.28); g.lineTo(hx+hr*0.82,hy+hr*0.5); g.closePath(); g.fill();
+  // 腳
+  g.strokeStyle='#caa23a'; g.lineWidth=3; g.lineCap='round';
+  g.beginPath(); g.moveTo(cx,cy+R*0.85); g.lineTo(cx,cy+R*1.12);
+  g.moveTo(cx+14,cy+R*0.82); g.lineTo(cx+14,cy+R*1.10); g.stroke();
+}
+
+/* ============ HUD / 提示 / 音效 ============ */
+function updateHUD(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('lines').textContent=lines;
+  document.getElementById('level').textContent=level;
+}
+let flashTimer=null;
+function showFlash(text,color){
+  const f=document.getElementById('flash');
+  f.textContent=text; f.style.background='linear-gradient(180deg,'+(color||'#1a5fb4')+'ee,'+(color||'#1a5fb4')+'00)';
+  f.classList.add('show');
+  clearTimeout(flashTimer); flashTimer=setTimeout(()=>f.classList.remove('show'),1400);
+}
+let actx=null;
+function beep(freq,dur,type){
+  try{
+    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type=type||'sine'; o.frequency.value=freq;
+    g.gain.value=0.06; o.connect(g); g.connect(actx.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+(dur||0.08));
+    o.stop(actx.currentTime+(dur||0.08)+0.02);
+  }catch(e){}
+}
+
+/* ============ 流程控制 ============ */
+function loop(ts){
+  if(!running) return;
+  const dt=Math.min(0.05,(ts-last)/1000)||0; last=ts;
+  if(!paused && !over){ step(dt); render(); }
+  requestAnimationFrame(loop);
+}
+function start(){
+  reset(); running=true; over=false; paused=false;
+  hideOverlay(); last=performance.now();
+  requestAnimationFrame(loop);
+}
+function endGame(){
+  over=true; running=false;
+  showOverlay('🪺 遊戲結束','最終分數：<b>'+score+'</b>　消除 '+lines+' 列<br>再接再厲，保護更多小鳥！','再玩一次');
+  beep(160,0.4,'sawtooth');
+}
+function togglePause(){
+  if(over||!running) return;
+  paused=!paused;
+  if(paused) showOverlay('⏸ 暫停中','按下繼續回到遊戲','繼續遊戲');
+  else hideOverlay();
+}
+function showOverlay(t,h,btn){
+  document.getElementById('ovTitle').textContent=t;
+  document.getElementById('ovText').innerHTML=h;
+  document.getElementById('ovBtn').textContent=btn;
+  document.getElementById('overlay').classList.add('show');
+}
+function hideOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+
+document.getElementById('ovBtn').addEventListener('click',()=>{
+  if(paused && running && !over){ paused=false; hideOverlay(); }
+  else start();
+});
+document.getElementById('pauseBtn').addEventListener('click',togglePause);
+
+/* ============ 鍵盤 ============ */
+window.addEventListener('keydown',(e)=>{
+  if(!running||over){
+    if((e.key==='Enter'||e.key===' ') && !running){ e.preventDefault(); start(); }
+    return;
+  }
+  const k=e.key;
+  if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].includes(k)) e.preventDefault();
+  if(paused){ if(k==='p'||k==='P') togglePause(); return; }
+  switch(k){
+    case 'ArrowLeft': move(-1); break;
+    case 'ArrowRight': move(1); break;
+    case 'ArrowDown': case ' ': hardDrop(); break;
+    case 'ArrowUp': case 'x': case 'X': tryRotate(1); break;
+    case 'p': case 'P': togglePause(); break;
+  }
+});
+
+/* ============ 觸控 ============ */
+function bindTouch(id,fn){
+  const el=document.getElementById(id);
+  el.addEventListener('click',(e)=>{ e.preventDefault(); if(running&&!over&&!paused) fn(); });
+}
+bindTouch('tLeft',()=>move(-1));
+bindTouch('tRight',()=>move(1));
+bindTouch('tRot',()=>tryRotate(1));
+bindTouch('tDrop',hardDrop);
+
+/* ============ 初始化 ============ */
+reset();
+render();
+drawLegend();
+drawCover();
+document.getElementById('overlay').classList.add('show');
+})();
+</script>
+</body>
+</html>
