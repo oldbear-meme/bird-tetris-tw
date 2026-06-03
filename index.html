@@ -31,40 +31,35 @@
   .sub{font-size:12px; color:#6f6650; margin:0;}
   @media (max-width:560px){ .sub{display:none;} h1{margin:0;} }
 
-  /* 精簡 HUD */
-  .hud{display:flex; align-items:center; gap:8px; width:100%; max-width:430px;
-    background:var(--panel); border:2px solid var(--line); border-radius:12px; padding:6px 10px;
+  .hud{display:flex; align-items:center; gap:7px; width:100%; max-width:440px;
+    background:var(--panel); border:2px solid var(--line); border-radius:12px; padding:6px 9px;
     box-shadow:0 4px 12px rgba(60,50,20,.10);}
-  .hud .stat{display:flex; flex-direction:column; align-items:center; line-height:1.05; flex:1;}
-  .hud .stat span{font-size:10px; color:#7a7259;}
-  .hud .stat b{font-size:18px; color:var(--accent);}
+  .hud .stat{display:flex; flex-direction:column; align-items:center; line-height:1.05; flex:1; min-width:0;}
+  .hud .stat span{font-size:9.5px; color:#7a7259; white-space:nowrap;}
+  .hud .stat b{font-size:17px; color:var(--accent);}
+  .hud .stat.dex b{color:#b8860b; font-size:15px;}
   .nextWrap{display:flex; flex-direction:column; align-items:center;}
-  .nextWrap span{font-size:10px; color:#7a7259; margin-bottom:1px;}
+  .nextWrap span{font-size:9.5px; color:#7a7259; margin-bottom:1px;}
   #next{display:block; background:#f7f2e3; border-radius:7px;}
-  .pauseBtn{width:42px; height:42px; flex:0 0 42px; border-radius:10px; border:2px solid var(--line);
-    background:#fff; font-size:18px; color:var(--ink); cursor:pointer;}
+  .pauseBtn{width:40px; height:40px; flex:0 0 40px; border-radius:10px; border:2px solid var(--line);
+    background:#fff; font-size:17px; color:var(--ink); cursor:pointer;}
   .pauseBtn:active{transform:translateY(2px);}
 
   .boardWrap{position:relative; border-radius:12px; overflow:hidden;
     box-shadow:0 8px 22px rgba(60,50,20,.22); border:4px solid #fff; touch-action:none;}
   #board{display:block; background:#f4efe0; touch-action:none;}
 
-  /* 觸控操作盤（手機顯示） */
-  .pad{display:none; width:100%; max-width:470px; justify-content:space-between; gap:14px;
-    touch-action:none; margin-top:2px;}
+  .pad{display:none; width:100%; max-width:470px; gap:12px; touch-action:none; margin-top:2px;}
   @media (pointer:coarse){ .pad{display:flex;} }
-  .cluster{display:flex; gap:10px; flex:1;}
   .tbtn{flex:1; height:64px; border-radius:16px; border:2px solid var(--line);
     background:var(--panel); color:var(--ink); font-size:25px; font-weight:700;
     box-shadow:0 5px 0 #d8cfb8; touch-action:none; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:4px;}
-  .tbtn .lbl{font-size:12px; font-weight:600;}
+    display:flex; align-items:center; justify-content:center;}
   .tbtn:active{transform:translateY(3px); box-shadow:0 2px 0 #d8cfb8;}
   .tbtn.drop{background:linear-gradient(180deg,#ffe6c2,#ffd79a); border-color:#e9b877;}
   .tbtn.rot{background:linear-gradient(180deg,#dcefc6,#c7e3a6); border-color:#a9cd7e;}
 
-  /* 圖鑑（可收合） */
-  .legendBox{width:100%; max-width:430px; background:var(--panel); border:2px solid var(--line);
+  .legendBox{width:100%; max-width:440px; background:var(--panel); border:2px solid var(--line);
     border-radius:12px; padding:4px 12px 10px; box-shadow:0 4px 12px rgba(60,50,20,.08);}
   .legendBox summary{cursor:pointer; font-size:14px; color:#6f6650; padding:7px 0; font-weight:700; list-style:none;}
   .legendBox summary::-webkit-details-marker{display:none;}
@@ -113,6 +108,7 @@
     <div class="stat"><span>分數</span><b id="score">0</b></div>
     <div class="stat"><span>等級</span><b id="level">1</b></div>
     <div class="stat"><span>消除</span><b id="lines">0</b></div>
+    <div class="stat dex"><span>圖鑑</span><b id="dex">0/5</b></div>
     <div class="nextWrap"><span>下一個</span><canvas id="next" width="54" height="54"></canvas></div>
     <button class="pauseBtn" id="pauseBtn" title="暫停">⏸</button>
   </div>
@@ -136,23 +132,30 @@
   </div>
 
   <details class="legendBox" id="legendBox">
-    <summary>🐤 角色圖鑑 ・ 操作說明</summary>
+    <summary>🐤 角色圖鑑 ・ 進階玩法 ・ 操作說明</summary>
     <div class="legend">
       <div class="row"><canvas class="swatch" id="legBulbul"></canvas><div><b>白頭翁</b>：黑頭配明顯<b>白色後頸斑</b>，背橄欖綠、腹白。</div></div>
       <div class="row"><canvas class="swatch" id="legSparrow"></canvas><div><b>麻雀</b>：栗褐色頭頂、白臉頰上有<b>黑斑</b>。</div></div>
       <div class="row"><canvas class="swatch" id="legWhiteeye"></canvas><div><b>綠繡眼</b>：黃綠身體 + 醒目<b>白色眼圈</b>。</div></div>
-      <div class="row"><canvas class="swatch" id="legWorm"></canvas><div><b>蚯蚓</b>：長在堆疊表面，消除含蚯蚓的列可<b>大量加分</b>。</div></div>
-      <div class="row"><canvas class="swatch" id="legDumb"></canvas><div><b>大笨鳥</b>：圓胖笨拙、慢慢找蚯蚓吃，好對付。</div></div>
-      <div class="row"><canvas class="swatch" id="legStarling"></canvas><div><b>黑領椋鳥</b>：白頭<b>黑頸環</b>，移動超快搶蚯蚓！</div></div>
-      <div class="row"><canvas class="swatch" id="legMagpie"></canvas><div><b>台灣藍鵲</b>：黑頭紅嘴、寶藍身體與<b>超長藍尾</b>，會叼走幼鳥。</div></div>
+      <div class="row"><canvas class="swatch" id="legKingfisher"></canvas><div><b>翠鳥</b>（技能方塊）：落下時<b>俯衝穿透、清整欄</b>。</div></div>
+      <div class="row"><canvas class="swatch" id="legBarbet"></canvas><div><b>五色鳥</b>（技能方塊）：落下時<b>爆破周圍一圈</b>。</div></div>
+      <div class="row"><canvas class="swatch" id="legStarling"></canvas><div><b>黑領椋鳥</b>：白頭<b>黑頸環</b>，移動超快搶食物！</div></div>
+      <div class="row"><canvas class="swatch" id="legMagpie"></canvas><div><b>台灣藍鵲</b>：黑頭紅嘴超長藍尾，會叼走幼鳥。</div></div>
     </div>
     <div class="controls">
-      <b>手機：</b>底部按鈕操作，◀▶ 可<b>長按連續移動</b>，↻ 旋轉、⤓ 直接落下。<br>
+      <b>✨ 進階驚喜：</b><br>
+      🌙 <b>領角鴞</b>的夜晚會降臨（節奏放慢、<b>分數加倍</b>）；🦅 <b>國慶鳥</b>過境會清掉最高一列。<br>
+      💎 <b>帝雉</b>等稀有鳥偶爾現身<b>大加分</b>，並永久記入上方<b>圖鑑</b>。<br>
+      🍴 食物有 🪱蚯蚓・🌸花蜜・🍒漿果・🌾穀子，餵給<b>對味的鳥</b>那一列<b>加倍分</b>！<br>
+      <span style="opacity:.7">（花蜜→綠繡眼、漿果→白頭翁、穀子→麻雀）</span>
+    </div>
+    <div class="controls">
+      <b>手機：</b>◀▶ 可<b>長按連續移動</b>，↻ 旋轉、⤓ 直接落下。<br>
       <b>電腦：</b><kbd>←</kbd><kbd>→</kbd> 移動　<kbd>↓</kbd>/<kbd>空白</kbd> 落下　<kbd>↑</kbd>/<kbd>X</kbd> 旋轉　<kbd>P</kbd> 暫停
     </div>
   </details>
 
-  <footer>用 ❤️ 與一群小鳥做成的開源小遊戲</footer>
+  <footer>用 ❤️ 與一群台灣小鳥做成的開源小遊戲</footer>
 </div>
 
 <script>
@@ -160,8 +163,8 @@
 (function(){
 /* ============ 基本設定 ============ */
 const COLS = 10, ROWS = 20;
-let CELL = 30;                         // 動態格子大小，由 layout() 計算
-const NS = 54;                         // 下一個預覽畫布邏輯尺寸
+let CELL = 30;
+const NS = 54;
 const board = document.getElementById('board');
 const nextCv = document.getElementById('next');
 const ctx = board.getContext('2d');
@@ -173,13 +176,26 @@ nextCv.width = NS*DPR; nextCv.height = NS*DPR;
 nextCv.style.width = NS+'px'; nextCv.style.height = NS+'px';
 nctx.setTransform(DPR,0,0,DPR,0,0);
 
-/* ============ 主角鳥種調色盤（真實特徵） ============ */
+/* ============ 主角鳥種 ============ */
 const SPECIES = [
   { name:'白頭翁', cell:'#e9e6db', back:'#7e8366', wing:'#676b50', belly:'#f4f1e7', head:'#2b2b2b', beak:'#2e2e2e', mark:'bulbul' },
   { name:'麻雀',   cell:'#f0e2cf', back:'#9e6a3c', wing:'#7e5128', belly:'#ecdfc8', head:'#7c4a24', beak:'#33312c', mark:'sparrow' },
   { name:'綠繡眼', cell:'#e6efc9', back:'#9cbf3c', wing:'#82a32d', belly:'#eef4d8', head:'#a6c742', beak:'#c79a35', mark:'whiteeye' },
 ];
-const WORM = 'worm';
+/* 食物：對味鳥種（worm 通用） */
+const FOODS = ['worm','nectar','berry','seed'];
+const FOOD_FAV = { worm:null, nectar:2, berry:0, seed:1 };
+/* 收集圖鑑 */
+const DEX = [
+  {id:'kingfisher', name:'翠鳥'},
+  {id:'barbet',     name:'五色鳥'},
+  {id:'owl',        name:'領角鴞'},
+  {id:'raptor',     name:'灰面鵟鷹'},
+  {id:'pheasant',   name:'帝雉'},
+];
+function loadDex(){ try{ return new Set(JSON.parse(localStorage.getItem('birdDex')||'[]')); }catch(e){ return new Set(); } }
+function saveDex(){ try{ localStorage.setItem('birdDex', JSON.stringify([...dex])); }catch(e){} }
+let dex = loadDex();
 
 /* ============ 方塊形狀 ============ */
 const SHAPES = {
@@ -198,7 +214,8 @@ let grid, piece, nextPiece, score, lines, level, dropMs, dropAcc, last;
 let running=false, paused=false, over=false;
 let bag=[];
 let entities=[];
-let wormTimer=0, npcStarlingDone=false, npcDumbDone=false, magpieTimer=0;
+let foodTimer=0, npcStarlingDone=false, npcDumbDone=false, magpieTimer=0;
+let nightActive=false, nightTimer=0, nightRemain=0, raptorTimer=0, pheasantTimer=0;
 
 function newGrid(){ return Array.from({length:ROWS},()=>Array(COLS).fill(null)); }
 function refillBag(){ bag = KEYS.slice(); for(let i=bag.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[bag[i],bag[j]]=[bag[j],bag[i]];} }
@@ -207,15 +224,27 @@ function makePiece(key){
   const shape = SHAPES[key].map(r=>r.slice());
   const sp = (Math.random()*3)|0;
   const col = ((COLS - shape[0].length)/2)|0;
-  return {key, shape, species:sp, row:0, col};
+  return {key, shape, species:sp, row:0, col, special:null};
+}
+function rollSpecial(){
+  if(level>=2 && Math.random()<0.055) return 'kingfisher';
+  if(level>=3 && Math.random()<0.05) return 'barbet';
+  return null;
+}
+function newPiece(){
+  const s=rollSpecial();
+  if(s) return { key:'SP', shape:[[1]], species:0, special:s, row:0, col:(COLS/2)|0 };
+  return makePiece(nextKey());
 }
 function reset(){
   grid=newGrid(); score=0; lines=0; level=1; dropMs=900; dropAcc=0;
-  entities=[]; wormTimer=4500; magpieTimer=22000;
+  entities=[]; foodTimer=4500; magpieTimer=22000;
   npcStarlingDone=false; npcDumbDone=false;
+  nightActive=false; nightTimer=26000; nightRemain=0;
+  raptorTimer=60000; pheasantTimer=46000;
   over=false; paused=false;
-  piece=makePiece(nextKey()); nextPiece=makePiece(nextKey());
-  updateHUD(); drawNext();
+  piece=newPiece(); nextPiece=newPiece();
+  updateHUD(); updateDexHUD(); drawNext();
 }
 
 /* ============ 碰撞與旋轉 ============ */
@@ -236,15 +265,41 @@ function rotate(shape,dir){
   return out;
 }
 function tryRotate(dir){
-  if(piece.key==='O') return;
+  if(piece.special || piece.key==='O') return;
   const rot=rotate(piece.shape,dir);
   for(const k of [0,-1,1,-2,2]){
     if(!collide(rot,piece.row,piece.col+k)){ piece.shape=rot; piece.col+=k; return; }
   }
 }
 
-/* ============ 鎖定、消列、蚯蚓 ============ */
+/* ============ 收集圖鑑 ============ */
+function collect(id){
+  if(dex.has(id)) return false;
+  dex.add(id); saveDex(); updateDexHUD(); beep(990,0.1,'triangle');
+  return true;
+}
+
+/* ============ 鎖定、消列、食物 ============ */
+function applySpecial(p){
+  const c=p.col, r=p.row;
+  if(p.special==='kingfisher'){
+    for(let rr=0;rr<ROWS;rr++) grid[rr][c]=null;
+    collect('kingfisher'); score+=150*level; updateHUD();
+    showFlash('翠鳥俯衝！清空一整欄','#1f8fc0'); beep(700,0.12,'triangle');
+  } else if(p.special==='barbet'){
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      const R=r+dr,C=c+dc; if(R>=0&&R<ROWS&&C>=0&&C<COLS) grid[R][C]=null;
+    }
+    collect('barbet'); score+=300*level; updateHUD();
+    showFlash('五色鳥爆破！清掉周圍一圈','#d06bb0'); beep(520,0.14,'square');
+  }
+}
+function advance(){
+  piece=nextPiece; nextPiece=newPiece(); drawNext();
+  if(collide(piece.shape,piece.row,piece.col)) endGame();
+}
 function lockPiece(){
+  if(piece.special){ applySpecial(piece); clearLines(); advance(); return; }
   let gameover=false;
   for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++){
     if(!piece.shape[r][c]) continue;
@@ -255,45 +310,53 @@ function lockPiece(){
   beep(220,0.05);
   clearLines();
   if(gameover){ endGame(); return; }
-  piece=nextPiece; nextPiece=makePiece(nextKey()); drawNext();
-  if(collide(piece.shape,piece.row,piece.col)) endGame();
+  advance();
 }
 function clearLines(){
-  let cleared=0, wormBonus=0;
+  let cleared=0, foodBonus=0;
   for(let r=ROWS-1;r>=0;r--){
     if(grid[r].every(cell=>cell)){
-      for(const cell of grid[r]) if(cell && cell.t===WORM) wormBonus++;
+      const speciesInRow=new Set();
+      for(const cell of grid[r]) if(cell.t==='bird') speciesInRow.add(cell.sp);
+      for(const cell of grid[r]) if(cell.t==='food'){
+        const fav=FOOD_FAV[cell.food];
+        let pts=200;
+        if(fav!=null && speciesInRow.has(fav)) pts*=2;
+        foodBonus+=pts;
+      }
       grid.splice(r,1); grid.unshift(Array(COLS).fill(null));
       cleared++; r++;
     }
   }
   if(cleared){
     const base=[0,100,300,500,800][cleared]||800;
-    let gain=base*level;
-    if(wormBonus){ gain += wormBonus*200*level; showFlash('🪱 小鳥們吃到蚯蚓了！ +'+(wormBonus*200*level),'#3a8a3a'); beep(660,0.08,'triangle'); }
+    let gain=(base + foodBonus)*level;
+    if(nightActive) gain*=2;
     score+=gain; lines+=cleared;
+    if(foodBonus) showFlash('🍴 餵食成功！'+(nightActive?'（夜晚加倍）':'')+' +'+(foodBonus*level*(nightActive?2:1)),'#3a8a3a');
     const newLevel=1+Math.floor(lines/10);
-    if(newLevel>level){ level=newLevel; dropMs=Math.max(110, 900-(level-1)*70); }
+    if(newLevel>level){ level=newLevel; dropMs=Math.max(110, 900-(level-1)*70); showFlash('⬆️ 等級 '+level+'！','#7aa83c'); }
     beep(440+cleared*60,0.09,'square');
     updateHUD();
   }
 }
-function spawnWorm(){
+function spawnFood(){
+  const food=FOODS[(Math.random()*FOODS.length)|0];
   const cols=[...Array(COLS).keys()].sort(()=>Math.random()-0.5);
   for(const c of cols){
     let top=ROWS; for(let r=0;r<ROWS;r++){ if(grid[r][c]){ top=r; break; } }
     const wr=top-1;
-    if(wr>=0 && !grid[wr][c]){ grid[wr][c]={t:WORM}; return; }
-    if(top===ROWS){ grid[ROWS-1][c]={t:WORM}; return; }
+    if(wr>=0 && !grid[wr][c]){ grid[wr][c]={t:'food',food}; return; }
+    if(top===ROWS){ grid[ROWS-1][c]={t:'food',food}; return; }
   }
 }
 
-/* ============ NPC：巡邏吃蚯蚓 ============ */
+/* ============ NPC：巡邏吃食物 ============ */
 function surfaceTop(c){ for(let r=0;r<ROWS;r++){ if(grid[r][c]) return r; } return ROWS; }
-function findNearestWormCol(fromCol){
+function findNearestFoodCol(fromCol){
   let best=-1, bestD=1e9;
   for(let c=0;c<COLS;c++){
-    let has=false; for(let r=0;r<ROWS;r++) if(grid[r][c]&&grid[r][c].t===WORM){has=true;break;}
+    let has=false; for(let r=0;r<ROWS;r++) if(grid[r][c]&&grid[r][c].t==='food'){has=true;break;}
     if(has){ const d=Math.abs(c-fromCol); if(d<bestD){bestD=d;best=c;} }
   }
   return best;
@@ -303,19 +366,19 @@ function spawnPatrol(kind){
     speed: kind==='starling'? 7.5 : 2.2, eat:0});
 }
 function updatePatrol(e,dt){
-  const target=findNearestWormCol(e.col);
+  const target=findNearestFoodCol(e.col);
   if(target<0){
     e.col += Math.sin(performance.now()/600 + (e.kind==='starling'?0:3))*e.speed*dt*0.15;
   } else {
     const dir=Math.sign(target-e.col);
     if(Math.abs(target-e.col)<0.12){
-      for(let r=0;r<ROWS;r++) if(grid[r][target]&&grid[r][target].t===WORM){ grid[r][target]=null; e.eat++; beep(160,0.05); showFlash((e.kind==='starling'?'黑領椋鳥':'大笨鳥')+'搶走了一條蚯蚓！','#a5512f'); break; }
+      for(let r=0;r<ROWS;r++) if(grid[r][target]&&grid[r][target].t==='food'){ grid[r][target]=null; e.eat++; beep(160,0.05); showFlash((e.kind==='starling'?'黑領椋鳥':'大笨鳥')+'搶走了食物！','#a5512f'); break; }
     } else { e.col += dir*e.speed*dt; }
   }
   e.col=Math.max(0.5,Math.min(COLS-0.5,e.col));
 }
 
-/* ============ 台灣藍鵲：飛過叼走幼鳥 ============ */
+/* ============ 台灣藍鵲 ============ */
 function spawnMagpie(){
   let minTop=ROWS; for(let c=0;c<COLS;c++) minTop=Math.min(minTop,surfaceTop(c));
   const y=Math.max(0,minTop-1);
@@ -330,26 +393,56 @@ function updateMagpie(e,dt){
     e.last=c;
     if(e.eaten<3){
       const top=surfaceTop(c);
-      if(top<ROWS && grid[top][c] && grid[top][c].t==='bird'){
-        grid[top][c]=null; e.eaten++; beep(300,0.06,'sawtooth');
-      }
+      if(top<ROWS && grid[top][c] && grid[top][c].t==='bird'){ grid[top][c]=null; e.eaten++; beep(300,0.06,'sawtooth'); }
     }
   }
   return e.x<=COLS+1.5;
 }
 
+/* ============ 生態事件 ============ */
+function startNight(){ nightActive=true; nightRemain=15000; nightTimer=42000;
+  if(!collect('owl')) {} showFlash('🌙 領角鴞的夜晚：節奏放慢、分數加倍！','#3b4a8b'); beep(300,0.16,'sine'); }
+function endNight(){ nightActive=false; showFlash('🌅 天亮了，恢復正常','#e0a030'); }
+function raptorEvent(){
+  let top=-1; for(let r=0;r<ROWS;r++){ if(grid[r].some(c=>c)){ top=r; break; } }
+  if(top>=0){ grid.splice(top,1); grid.unshift(Array(COLS).fill(null)); lines++; score+=200*level; updateHUD(); }
+  collect('raptor');
+  entities.push({kind:'raptorFlock', x:-3, y:Math.max(0.6,(top<0?2:top)), speed:8});
+  showFlash('🦅 國慶鳥過境！鷹群清掉最高一列','#6a4a26'); beep(420,0.1,'sawtooth');
+}
+function pheasantEvent(){
+  const bonus=1000*level*(nightActive?2:1);
+  score+=bonus; updateHUD(); collect('pheasant');
+  entities.push({kind:'pheasant', x:-3, y:ROWS-2.4, speed:3.2});
+  showFlash('💎 稀有！帝雉現身（千元鈔特有種） +'+bonus,'#c9a227'); beep(880,0.18,'triangle');
+}
+
 /* ============ 主迴圈邏輯 ============ */
 function step(dt){
+  const interval = dropMs * (nightActive?1.5:1);
   dropAcc+=dt*1000;
-  if(dropAcc>=dropMs){ dropAcc=0; softDrop(false); }
-  wormTimer-=dt*1000;
-  if(wormTimer<=0){ spawnWorm(); wormTimer=4200 - Math.min(2000,level*180); }
+  if(dropAcc>=interval){ dropAcc=0; softDrop(false); }
+
+  foodTimer-=dt*1000;
+  if(foodTimer<=0){ spawnFood(); foodTimer=4200 - Math.min(2000,level*180); }
+
   if(!npcDumbDone && level>=2){ spawnPatrol('dumb'); npcDumbDone=true; }
   if(!npcStarlingDone && level>=3){ spawnPatrol('starling'); npcStarlingDone=true; }
+
   magpieTimer-=dt*1000;
   if(magpieTimer<=0 && level>=3){ spawnMagpie(); magpieTimer=18000 - Math.min(8000,level*900); }
+
+  if(level>=2){
+    if(!nightActive){ nightTimer-=dt*1000; if(nightTimer<=0) startNight(); }
+    else { nightRemain-=dt*1000; if(nightRemain<=0) endNight(); }
+    pheasantTimer-=dt*1000; if(pheasantTimer<=0){ pheasantEvent(); pheasantTimer=70000; }
+  }
+  if(level>=3){ raptorTimer-=dt*1000; if(raptorTimer<=0){ raptorEvent(); raptorTimer=58000; } }
+
   entities=entities.filter(e=>{
     if(e.kind==='magpie') return updateMagpie(e,dt);
+    if(e.kind==='raptorFlock'){ e.x+=e.speed*dt; return e.x<=COLS+3.5; }
+    if(e.kind==='pheasant'){ e.x+=e.speed*dt; return e.x<=COLS+3.5; }
     updatePatrol(e,dt); return true;
   });
 }
@@ -405,6 +498,46 @@ function drawBird(g,x,y,s,sp,ghost){
   g.beginPath(); g.moveTo(hx+hr*0.78,hy+hr*0.02); g.lineTo(hx+hr*1.7,hy+hr*0.22); g.lineTo(hx+hr*0.80,hy+hr*0.42); g.closePath(); g.fill();
   g.restore();
 }
+
+/* 技能方塊（翠鳥 / 五色鳥） */
+function drawSpecialCell(g,x,y,s,kind){
+  g.save();
+  roundRect(g,x+1.5,y+1.5,s-3,s-3,Math.max(4,s*0.18));
+  g.fillStyle = kind==='kingfisher' ? '#d6ecf5' : '#eaf3d6'; g.fill();
+  g.lineWidth=1.6; g.strokeStyle = kind==='kingfisher' ? '#5bb6d6' : '#9ccb6a'; g.stroke();
+  const cx=x+s*0.50, cy=y+s*0.54, R=s*0.30;
+  if(kind==='kingfisher'){
+    g.fillStyle='#e08a3a';
+    g.beginPath(); g.moveTo(cx-R*0.7,cy); g.lineTo(cx-R*1.5,cy-R*0.2); g.lineTo(cx-R*1.3,cy+R*0.4); g.closePath(); g.fill();
+    g.beginPath(); g.ellipse(cx-R*0.1,cy,R*1.0,R*0.82,0,0,TAU); g.fillStyle='#1f9fc0'; g.fill();
+    g.beginPath(); g.ellipse(cx,cy+R*0.32,R*0.6,R*0.46,0,0,TAU); g.fillStyle='#e0883a'; g.fill();
+    const hx=cx+R*0.65,hy=cy-R*0.45,hr=s*0.2;
+    g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#1f9fc0'; g.fill();
+    g.beginPath(); g.arc(hx+hr*0.28,hy-hr*0.1,hr*0.28,0,TAU); g.fillStyle='#fff'; g.fill();
+    g.beginPath(); g.arc(hx+hr*0.32,hy-hr*0.1,hr*0.14,0,TAU); g.fillStyle='#111'; g.fill();
+    g.fillStyle='#1a1a1a';
+    g.beginPath(); g.moveTo(hx+hr*0.6,hy-hr*0.05); g.lineTo(hx+hr*2.1,hy+hr*0.12); g.lineTo(hx+hr*0.6,hy+hr*0.35); g.closePath(); g.fill();
+  } else {
+    g.beginPath(); g.ellipse(cx-R*0.1,cy,R*1.0,R*0.85,0,0,TAU); g.fillStyle='#3fae54'; g.fill();
+    g.beginPath(); g.ellipse(cx-R*0.25,cy,R*0.55,R*0.4,-0.3,0,TAU); g.fillStyle='#349147'; g.fill();
+    const hx=cx+R*0.58,hy=cy-R*0.4,hr=s*0.215;
+    g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#3fae54'; g.fill();
+    g.fillStyle='#2f6fc0'; g.beginPath(); g.arc(hx-hr*0.05,hy+hr*0.2,hr*0.5,0,TAU); g.fill();
+    g.fillStyle='#d23b2e'; g.beginPath(); g.arc(hx,hy-hr*0.55,hr*0.42,0,TAU); g.fill();
+    g.fillStyle='#e8c33a'; g.beginPath(); g.arc(hx+hr*0.15,hy+hr*0.62,hr*0.36,0,TAU); g.fill();
+    g.beginPath(); g.arc(hx+hr*0.3,hy-hr*0.05,hr*0.17,0,TAU); g.fillStyle='#111'; g.fill();
+    g.fillStyle='#2a2a2a';
+    g.beginPath(); g.moveTo(hx+hr*0.7,hy); g.lineTo(hx+hr*1.55,hy+hr*0.2); g.lineTo(hx+hr*0.7,hy+hr*0.45); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+
+/* 食物 */
+function drawFlower(g,cx,cy,r){
+  g.fillStyle='#f2a9c4';
+  for(let i=0;i<5;i++){ const a=i/5*TAU - Math.PI/2; g.beginPath(); g.ellipse(cx+Math.cos(a)*r*0.62, cy+Math.sin(a)*r*0.62, r*0.45, r*0.28, a, 0, TAU); g.fill(); }
+  g.beginPath(); g.arc(cx,cy,r*0.34,0,TAU); g.fillStyle='#f4d24a'; g.fill();
+}
 function drawWorm(g,x,y,s){
   g.save();
   const cy=y+s/2;
@@ -415,6 +548,26 @@ function drawWorm(g,x,y,s){
   g.beginPath(); g.arc(x+s*0.82,cy,s*0.06,0,TAU); g.fillStyle='#222'; g.fill();
   g.restore();
 }
+function drawFood(g,x,y,s,food){
+  const cx=x+s/2, cy=y+s/2;
+  if(food==='worm'){ drawWorm(g,x,y,s); return; }
+  if(food==='nectar'){ drawFlower(g,cx,cy,s*0.36); return; }
+  if(food==='berry'){
+    g.fillStyle='#5b8a3a'; g.beginPath(); g.ellipse(cx,cy-s*0.24,s*0.13,s*0.06,0,0,TAU); g.fill();
+    g.fillStyle='#c0392b';
+    for(const o of [[-0.17,0.0],[0.17,0.0],[0,0.22]]){ g.beginPath(); g.arc(cx+o[0]*s,cy+o[1]*s,s*0.16,0,TAU); g.fill(); }
+    g.fillStyle='rgba(255,255,255,.5)';
+    for(const o of [[-0.21,-0.06],[0.13,-0.06],[-0.04,0.16]]){ g.beginPath(); g.arc(cx+o[0]*s,cy+o[1]*s,s*0.04,0,TAU); g.fill(); }
+    return;
+  }
+  if(food==='seed'){
+    g.fillStyle='#b08850';
+    for(const o of [[-0.16,0.06],[0.13,-0.08],[0.02,0.18]]){ g.save(); g.translate(cx+o[0]*s,cy+o[1]*s); g.rotate(0.5); g.beginPath(); g.ellipse(0,0,s*0.15,s*0.075,0,0,TAU); g.fill(); g.restore(); }
+    return;
+  }
+}
+
+/* NPC 與事件鳥 */
 function drawDumb(g,cx,cy,h){
   const R=h*0.40; g.save();
   g.beginPath(); g.ellipse(cx,cy+R*0.15,R*1.05,R*1.0,0,0,TAU); g.fillStyle='#a98b63'; g.fill();
@@ -471,8 +624,46 @@ function drawMagpie(g,cx,cy,h){
   g.moveTo(cx+R*0.4,cy+R*0.68); g.lineTo(cx+R*0.4,cy+R*1.05); g.stroke();
   g.restore();
 }
+function drawHawk(g,cx,cy,s){
+  g.beginPath();
+  g.moveTo(cx-s,cy);
+  g.quadraticCurveTo(cx-s*0.35,cy-s*0.55,cx,cy-s*0.08);
+  g.quadraticCurveTo(cx+s*0.35,cy-s*0.55,cx+s,cy);
+  g.quadraticCurveTo(cx+s*0.35,cy-s*0.05,cx,cy+s*0.14);
+  g.quadraticCurveTo(cx-s*0.35,cy-s*0.05,cx-s,cy);
+  g.closePath(); g.fill();
+}
+function drawRaptorFlock(e){
+  ctx.save(); ctx.fillStyle='#5a4632';
+  const ys=[0,-0.85,0.7,-0.35,0.45];
+  for(let i=0;i<5;i++){
+    const bx=(e.x - i*0.95)*CELL + CELL/2;
+    const by=(e.y + ys[i])*CELL + CELL/2;
+    drawHawk(ctx,bx,by,CELL*0.85);
+  }
+  ctx.restore();
+}
+function drawPheasant(g,cx,cy,h){
+  const R=h*0.26; g.save();
+  g.strokeStyle='#7b8290'; g.lineCap='round';
+  for(let i=0;i<3;i++){ g.lineWidth=R*0.3; g.beginPath(); g.moveTo(cx-R*0.6,cy);
+    g.quadraticCurveTo(cx-R*2.3,cy-R*0.2+i*R*0.45, cx-R*3.1,cy+R*0.9+i*R*0.35); g.stroke(); }
+  g.beginPath(); g.ellipse(cx,cy,R*1.0,R*0.8,0,0,TAU); g.fillStyle='#2b3a67'; g.fill();
+  g.fillStyle='#e8edf5'; g.beginPath(); g.ellipse(cx-R*0.1,cy+R*0.12,R*0.55,R*0.16,-0.2,0,TAU); g.fill();
+  const hx=cx+R*0.75,hy=cy-R*0.5,hr=h*0.15;
+  g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#22305c'; g.fill();
+  g.fillStyle='#d23b2e'; g.beginPath(); g.arc(hx+hr*0.15,hy,hr*0.6,0,TAU); g.fill();
+  g.beginPath(); g.arc(hx+hr*0.3,hy,hr*0.2,0,TAU); g.fillStyle='#111'; g.fill();
+  g.fillStyle='#d8d29a'; g.beginPath(); g.moveTo(hx+hr*0.8,hy); g.lineTo(hx+hr*1.6,hy+hr*0.15); g.lineTo(hx+hr*0.8,hy+hr*0.4); g.closePath(); g.fill();
+  g.fillStyle='#fff7c0';
+  g.beginPath(); g.arc(cx-R*1.4,cy-R*1.3,h*0.05,0,TAU); g.fill();
+  g.beginPath(); g.arc(cx+R*1.2,cy-R*1.1,h*0.035,0,TAU); g.fill();
+  g.restore();
+}
 function drawEntity(e){
   if(e.kind==='magpie'){ drawMagpie(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*1.4); return; }
+  if(e.kind==='raptorFlock'){ drawRaptorFlock(e); return; }
+  if(e.kind==='pheasant'){ drawPheasant(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*2.0); return; }
   const col=Math.max(0,Math.min(COLS-1,Math.round(e.col)));
   const top=surfaceTop(col);
   const cyp=(Math.max(0,top-1))*CELL+CELL*0.5;
@@ -480,6 +671,7 @@ function drawEntity(e){
   if(e.kind==='starling') drawStarling(ctx,cxp,cyp,CELL*1.3);
   else drawDumb(ctx,cxp,cyp,CELL*1.3);
 }
+
 function render(){
   ctx.clearRect(0,0,COLS*CELL,ROWS*CELL);
   ctx.fillStyle='#f4efe0'; ctx.fillRect(0,0,COLS*CELL,ROWS*CELL);
@@ -488,19 +680,30 @@ function render(){
   for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(COLS*CELL,r*CELL);ctx.stroke();}
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const cell=grid[r][c]; if(!cell) continue;
-    if(cell.t===WORM) drawWorm(ctx,c*CELL,r*CELL,CELL); else drawBird(ctx,c*CELL,r*CELL,CELL,cell.sp,false);
+    if(cell.t==='food') drawFood(ctx,c*CELL,r*CELL,CELL,cell.food); else drawBird(ctx,c*CELL,r*CELL,CELL,cell.sp,false);
   }
   if(piece){
     for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)
-      if(piece.shape[r][c]){ const R=piece.row+r; if(R>=0) drawBird(ctx,(piece.col+c)*CELL,R*CELL,CELL,piece.species,false); }
+      if(piece.shape[r][c]){ const R=piece.row+r; if(R>=0){
+        if(piece.special) drawSpecialCell(ctx,(piece.col+c)*CELL,R*CELL,CELL,piece.special);
+        else drawBird(ctx,(piece.col+c)*CELL,R*CELL,CELL,piece.species,false);
+      }}
   }
   for(const e of entities) drawEntity(e);
+  if(nightActive){
+    ctx.fillStyle='rgba(20,26,64,.36)'; ctx.fillRect(0,0,COLS*CELL,ROWS*CELL);
+    ctx.fillStyle='#f5f0c0'; ctx.beginPath(); ctx.arc(COLS*CELL-CELL*1.3, CELL*1.2, CELL*0.62,0,TAU); ctx.fill();
+    ctx.fillStyle='rgba(20,26,64,.95)'; ctx.beginPath(); ctx.arc(COLS*CELL-CELL*1.0, CELL*1.0, CELL*0.56,0,TAU); ctx.fill();
+  }
 }
 function drawNext(){
   nctx.clearRect(0,0,NS,NS);
   const sh=nextPiece.shape, n=sh.length, cs=Math.floor((NS-6)/4);
   const w=n*cs, off=(NS-w)/2;
-  for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(sh[r][c]) drawBird(nctx,off+c*cs,off+r*cs,cs,nextPiece.species,false);
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(sh[r][c]){
+    if(nextPiece.special) drawSpecialCell(nctx,off+c*cs,off+r*cs,cs,nextPiece.special);
+    else drawBird(nctx,off+c*cs,off+r*cs,cs,nextPiece.species,false);
+  }
 }
 
 /* ============ 圖鑑 swatch ============ */
@@ -513,8 +716,8 @@ function drawLegend(){
   make('legBulbul', c=>drawBird(c,1,1,32,0));
   make('legSparrow', c=>drawBird(c,1,1,32,1));
   make('legWhiteeye', c=>drawBird(c,1,1,32,2));
-  make('legWorm', c=>drawWorm(c,1,1,32));
-  make('legDumb', c=>drawDumb(c,15,14,30));
+  make('legKingfisher', c=>drawSpecialCell(c,1,1,32,'kingfisher'));
+  make('legBarbet', c=>drawSpecialCell(c,1,1,32,'barbet'));
   make('legStarling', c=>drawStarling(c,15,15,30));
   make('legMagpie', c=>drawMagpie(c,20,15,30));
 }
@@ -564,7 +767,7 @@ function layout(){
   const vh=window.innerHeight;
   const padVisible = getComputedStyle(padEl).display!=='none';
   const reserve = (headerEl?headerEl.offsetHeight:0) + (hudEl?hudEl.offsetHeight:0)
-                + (padVisible?padEl.offsetHeight:0) + 46;  // 預留間距/安全區
+                + (padVisible?padEl.offsetHeight:0) + 46;
   const availH = Math.max(160, vh - reserve);
   const availW = Math.min(vw-12, 520);
   let cell = Math.floor(Math.min(availW/COLS, availH/ROWS));
@@ -585,12 +788,15 @@ function updateHUD(){
   document.getElementById('lines').textContent=lines;
   document.getElementById('level').textContent=level;
 }
+function updateDexHUD(){
+  const el=document.getElementById('dex'); if(el) el.textContent=dex.size+'/'+DEX.length;
+}
 let flashTimer=null;
 function showFlash(text,color){
   const f=document.getElementById('flash');
   f.textContent=text; f.style.background='linear-gradient(180deg,'+(color||'#1a5fb4')+'ee,'+(color||'#1a5fb4')+'00)';
   f.classList.add('show');
-  clearTimeout(flashTimer); flashTimer=setTimeout(()=>f.classList.remove('show'),1400);
+  clearTimeout(flashTimer); flashTimer=setTimeout(()=>f.classList.remove('show'),1500);
 }
 let actx=null;
 function ensureAudio(){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
@@ -620,7 +826,7 @@ function start(){
 }
 function endGame(){
   over=true; running=false;
-  showOverlay('🪺 遊戲結束','最終分數：<b>'+score+'</b>　消除 '+lines+' 列<br>再接再厲，保護更多小鳥！','再玩一次');
+  showOverlay('🪺 遊戲結束','最終分數：<b>'+score+'</b>　消除 '+lines+' 列<br>圖鑑收集：'+dex.size+'/'+DEX.length+' 種<br>再接再厲，保護更多小鳥！','再玩一次');
   beep(160,0.4,'sawtooth');
 }
 function togglePause(){
