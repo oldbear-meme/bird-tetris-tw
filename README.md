@@ -4,7 +4,8 @@
 
 ## ▶️ 立即遊玩
 
-- **線上版（點了就能玩）**：https://oldbear-meme.github.io/bird-tetris-tw/
+- **線上版（中文）**：https://oldbear-meme.github.io/bird-tetris-tw/
+- **English version**: https://oldbear-meme.github.io/bird-tetris-tw/en/
 - **本機版**：下載後雙擊 `index.html`（或 `點我玩.vbs`）即可用瀏覽器開始。
 
 ## 🎮 操作方式
