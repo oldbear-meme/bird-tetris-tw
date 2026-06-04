@@ -159,7 +159,10 @@
       🍴 食物有 🪱蚯蚓・🌸花蜜・🫐藍莓・🌾穀子，餵給<b>對味的鳥</b>那一列<b>加倍分</b>！<br>
       🫐 <b>白頭翁碰到藍莓</b>會觸發「<b>藍莓盛宴</b>」，方塊<b>大量消失</b>＋大加分！<br>
       <span style="opacity:.7">（花蜜→綠繡眼、藍莓→白頭翁、穀子→麻雀）</span><br>
-      🌗 <b>24 節氣場景</b>：每升一級換一個節氣，背景隨春櫻🌸・夏陽☀️・秋楓🍁・冬雪❄️變化，鳥兒行為也跟著季節改變！
+      🌗 <b>24 節氣場景</b>：每升一級換一個節氣，背景隨春櫻🌸・夏陽☀️・秋楓🍁・冬雪❄️變化，鳥兒行為也跟著季節改變！<br>
+      🥚 春天有<b>鳥蛋</b>，消除即<b>孵化</b>大加分；🥟 到<b>冬至</b>會自動清底<b>補血</b>。<br>
+      🌀 夏季偶有<b>颱風</b>吹偏方塊；🦤 <b>埃及聖䴉</b>（外來種）會丟雜塊，清掉有<b>保育分</b>。<br>
+      💠 季節限定稀有鳥：夏<b>八色鳥</b>、冬<b>黑面琵鷺</b>，記入圖鑑！🔊 還有白頭翁・五色鳥的真實鳥鳴彩蛋。
     </div>
     <div class="controls">
       <b>手機：</b>◀▶ 可<b>長按連續移動</b>，↻ 旋轉、⤓ 直接落下。<br>
@@ -196,7 +199,7 @@ const SPECIES = [
 ];
 /* 食物：對味鳥種（worm 通用） */
 const FOODS = ['worm','nectar','blueberry','seed'];
-const FOOD_FAV = { worm:null, nectar:2, blueberry:0, seed:1 };
+const FOOD_FAV = { worm:null, nectar:2, blueberry:0, seed:1, egg:null };
 /* 收集圖鑑 */
 const DEX = [
   {id:'kingfisher', name:'翠鳥'},
@@ -204,6 +207,8 @@ const DEX = [
   {id:'owl',        name:'領角鴞'},
   {id:'raptor',     name:'灰面鵟鷹'},
   {id:'pheasant',   name:'帝雉'},
+  {id:'pitta',      name:'八色鳥'},
+  {id:'spoonbill',  name:'黑面琵鷺'},
 ];
 function loadDex(){ try{ return new Set(JSON.parse(localStorage.getItem('birdDex')||'[]')); }catch(e){ return new Set(); } }
 function saveDex(){ try{ localStorage.setItem('birdDex', JSON.stringify([...dex])); }catch(e){} }
@@ -249,6 +254,8 @@ let entities=[];
 let foodTimer=0, npcStarlingDone=false, npcDumbDone=false, magpieTimer=0;
 let nightActive=false, nightTimer=0, nightRemain=0, raptorTimer=0, pheasantTimer=0;
 let curTerm=-1, particles=[], particleType='petal';
+let typhoonActive=false, typhoonTimer=0, typhoonRemain=0, windDir=1, windAcc=0;
+let rareTimer=0, invasiveTimer=0, solsticeDone=false;
 
 function newGrid(){ return Array.from({length:ROWS},()=>Array(COLS).fill(null)); }
 function refillBag(){ bag = KEYS.slice(); for(let i=bag.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[bag[i],bag[j]]=[bag[j],bag[i]];} }
@@ -275,6 +282,8 @@ function reset(){
   npcStarlingDone=false; npcDumbDone=false;
   nightActive=false; nightTimer=26000; nightRemain=0;
   raptorTimer=60000; pheasantTimer=46000;
+  typhoonActive=false; typhoonTimer=22000; typhoonRemain=0; windAcc=0;
+  rareTimer=40000; invasiveTimer=52000; solsticeDone=false;
   over=false; paused=false;
   curTerm=termIndex(); particles=[]; updateScene();
   piece=newPiece(); nextPiece=newPiece();
@@ -325,7 +334,7 @@ function applySpecial(p){
       const R=r+dr,C=c+dc; if(R>=0&&R<ROWS&&C>=0&&C<COLS) grid[R][C]=null;
     }
     collect('barbet'); score+=300*level; updateHUD();
-    showFlash('五色鳥爆破！清掉周圍一圈','#d06bb0'); beep(520,0.14,'square');
+    showFlash('五色鳥爆破！清掉周圍一圈','#d06bb0'); call('barbet');
   }
 }
 function advance(){
@@ -366,20 +375,20 @@ function tryBlueberryFeast(p){
   const gain=(n*150 + 600)*level*(nightActive?2:1);
   score+=gain; lines+=n; updateHUD();
   showFlash('🫐 白頭翁的藍莓盛宴！方塊大消除 +'+gain,'#3b6cb5');
-  beep(680,0.12,'triangle'); beep(880,0.12,'sine');
+  beep(680,0.12,'triangle'); call('bulbul');
   for(let i=0;i<4;i++) entities.push({kind:'feast', x:1.5+i*2.4, y:Math.min(ROWS-1,bot), vy:-(3+i*0.6), life:1.0});
 }
 function clearLines(){
-  let cleared=0, foodBonus=0;
+  let cleared=0, foodBonus=0, hatched=false, junkCleared=0;
   for(let r=ROWS-1;r>=0;r--){
     if(grid[r].every(cell=>cell)){
       const speciesInRow=new Set();
       for(const cell of grid[r]) if(cell.t==='bird') speciesInRow.add(cell.sp);
-      for(const cell of grid[r]) if(cell.t==='food'){
-        const fav=FOOD_FAV[cell.food];
-        let pts=200;
-        if(fav!=null && speciesInRow.has(fav)) pts*=2;
-        foodBonus+=pts;
+      for(const cell of grid[r]){
+        if(cell.t==='food'){
+          if(cell.food==='egg'){ foodBonus+=500; hatched=true; }
+          else { const fav=FOOD_FAV[cell.food]; let pts=200; if(fav!=null && speciesInRow.has(fav)) pts*=2; foodBonus+=pts; }
+        } else if(cell.t==='junk'){ foodBonus+=250; junkCleared++; }
       }
       grid.splice(r,1); grid.unshift(Array(COLS).fill(null));
       cleared++; r++;
@@ -390,16 +399,20 @@ function clearLines(){
     let gain=(base + foodBonus)*level;
     if(nightActive) gain*=2;
     score+=gain; lines+=cleared;
-    if(foodBonus) showFlash('🍴 餵食成功！'+(nightActive?'（夜晚加倍）':'')+' +'+(foodBonus*level*(nightActive?2:1)),'#3a8a3a');
+    if(foodBonus && !hatched && !junkCleared) showFlash('🍴 餵食成功！'+(nightActive?'（夜晚加倍）':'')+' +'+(foodBonus*level*(nightActive?2:1)),'#3a8a3a');
     const newLevel=1+Math.floor(lines/10);
     if(newLevel>level){ level=newLevel; dropMs=Math.max(110, 900-(level-1)*70); showFlash('⬆️ 等級 '+level+'！','#7aa83c'); }
     beep(440+cleared*60,0.09,'square');
+    if(junkCleared) showFlash('♻️ 移除外來種 '+junkCleared+' 隻，生態加分！','#5a8f4a');
+    if(hatched){ showFlash('🐣 鳥蛋孵化成功！幼鳥誕生＋大量分數','#caa23a'); call('chirp');
+      for(let i=0;i<3;i++) entities.push({kind:'feast', x:2+i*2.5, y:ROWS-3, vy:-(3+i*0.5), life:1.0}); }
     updateHUD();
   }
 }
 function spawnFood(){
   let food=FOODS[(Math.random()*FOODS.length)|0];
   if(seasonOf()===1 && Math.random()<0.5) food='nectar';   // 夏：花蜜盛產
+  if(seasonOf()===0 && Math.random()<0.30) food='egg';     // 春：繁殖季鳥蛋
   const cols=[...Array(COLS).keys()].sort(()=>Math.random()-0.5);
   for(const c of cols){
     let top=ROWS; for(let r=0;r<ROWS;r++){ if(grid[r][c]){ top=r; break; } }
@@ -474,6 +487,60 @@ function pheasantEvent(){
   entities.push({kind:'pheasant', x:-3, y:ROWS-2.4, speed:3.2});
   showFlash('💎 稀有！帝雉現身（千元鈔特有種） +'+bonus,'#c9a227'); beep(880,0.18,'triangle');
 }
+/* 季節限定稀有鳥 */
+function seasonalRareEvent(){
+  const s=seasonOf();
+  if(s===1) rareFlyby('pitta','八色鳥（夏候鳥・國際瀕危）',800);
+  else if(s===3) rareFlyby('spoonbill','黑面琵鷺（冬候鳥・保育明星）',800);
+}
+function rareFlyby(id,label,base){
+  const bonus=base*level*(nightActive?2:1);
+  score+=bonus; updateHUD(); collect(id);
+  entities.push({kind:id, x:-3, y:ROWS-2.6, speed:3.0});
+  showFlash('💠 '+label+' 現身 +'+bonus,'#2f7fae'); call('chirp');
+}
+/* 冬至湯圓補血：清掉底部兩列 */
+function winterSolsticeRelief(){
+  let removed=0;
+  for(let r=ROWS-1;r>=0 && removed<2;r--){
+    if(grid[r].some(c=>c)){ grid.splice(r,1); grid.unshift(Array(COLS).fill(null)); removed++; r++; }
+  }
+  if(removed){ score+=300*level; lines+=removed; updateHUD(); }
+  showFlash('🥟 冬至湯圓，暖身補血！清掉底部 '+removed+' 列','#c0563a'); call('bulbul');
+}
+/* 夏季颱風 */
+function startTyphoon(){ typhoonActive=true; typhoonRemain=5000; typhoonTimer=30000; windDir=Math.random()<0.5?-1:1; windAcc=0; showFlash('🌀 颱風來襲！強風吹偏方塊','#5f6b78'); beep(180,0.3,'sawtooth'); }
+function endTyphoon(){ typhoonActive=false; showFlash('🌀 颱風遠離，天氣放晴','#7aa83c'); }
+/* 外來種埃及聖䴉 */
+function spawnJunk(){
+  const cols=[...Array(COLS).keys()].sort(()=>Math.random()-0.5);
+  for(const c of cols){
+    let top=ROWS; for(let r=0;r<ROWS;r++){ if(grid[r][c]){ top=r; break; } }
+    const wr=top-1;
+    if(wr>=0 && !grid[wr][c]){ grid[wr][c]={t:'junk'}; return; }
+    if(top===ROWS){ grid[ROWS-1][c]={t:'junk'}; return; }
+  }
+}
+function invasiveEvent(){
+  spawnJunk(); spawnJunk();
+  entities.push({kind:'ibis', x:-3, y:1.4, speed:5.0});
+  showFlash('🦤 外來種埃及聖䴉入侵！清掉雜塊有保育獎勵','#7a7a6a'); beep(240,0.12,'sawtooth');
+}
+/* 鳥鳴音效 */
+function tone(freq,delay,dur,type){
+  if(!actx) return;
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type=type||'triangle'; o.frequency.value=freq;
+  const t0=actx.currentTime+(delay||0);
+  g.gain.setValueAtTime(0.05,t0); o.connect(g); g.connect(actx.destination);
+  o.start(t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+(dur||0.1)); o.stop(t0+(dur||0.1)+0.02);
+}
+function call(name){
+  if(!actx) return;
+  if(name==='bulbul'){ tone(760,0,0.1); tone(560,0.13,0.1); tone(900,0.27,0.12); }
+  else if(name==='barbet'){ tone(300,0,0.12,'square'); tone(300,0.2,0.12,'square'); tone(300,0.4,0.12,'square'); }
+  else { tone(950,0,0.08); tone(1180,0.07,0.08); }
+}
 
 /* ============ 主迴圈邏輯 ============ */
 function step(dt){
@@ -500,10 +567,20 @@ function step(dt){
   }
   if(level>=3){ raptorTimer-=dt*1000; if(raptorTimer<=0){ raptorEvent(); raptorTimer = seasonOf()===2 ? 30000 : 58000; } }
 
+  // 夏季颱風：強風吹偏方塊
+  if(seasonOf()===1){
+    if(!typhoonActive){ typhoonTimer-=dt*1000; if(typhoonTimer<=0) startTyphoon(); }
+    else { typhoonRemain-=dt*1000; windAcc+=dt*1000; if(windAcc>=420){ windAcc=0; move(windDir); } if(typhoonRemain<=0) endTyphoon(); }
+  }
+  // 節氣限定稀有鳥（夏:八色鳥 / 冬:黑面琵鷺）
+  if(level>=2){ rareTimer-=dt*1000; if(rareTimer<=0){ seasonalRareEvent(); rareTimer=38000; } }
+  // 外來種埃及聖䴉入侵
+  if(level>=4){ invasiveTimer-=dt*1000; if(invasiveTimer<=0){ invasiveEvent(); invasiveTimer=40000; } }
+
   entities=entities.filter(e=>{
     if(e.kind==='magpie') return updateMagpie(e,dt);
     if(e.kind==='raptorFlock'){ e.x+=e.speed*dt; return e.x<=COLS+3.5; }
-    if(e.kind==='pheasant'){ e.x+=e.speed*dt; return e.x<=COLS+3.5; }
+    if(e.kind==='pheasant'||e.kind==='pitta'||e.kind==='spoonbill'||e.kind==='ibis'){ e.x+=e.speed*dt; return e.x<=COLS+3.5; }
     if(e.kind==='feast'){ e.y+=e.vy*dt; e.life-=dt; return e.life>0; }
     updatePatrol(e,dt); return true;
   });
@@ -630,6 +707,13 @@ function drawFood(g,x,y,s,food){
     for(const o of [[-0.16,0.06],[0.13,-0.08],[0.02,0.18]]){ g.save(); g.translate(cx+o[0]*s,cy+o[1]*s); g.rotate(0.5); g.beginPath(); g.ellipse(0,0,s*0.15,s*0.075,0,0,TAU); g.fill(); g.restore(); }
     return;
   }
+  if(food==='egg'){
+    g.fillStyle='#f3ece0'; g.beginPath(); g.ellipse(cx,cy+s*0.02,s*0.22,s*0.28,0,0,TAU); g.fill();
+    g.fillStyle='rgba(255,255,255,.6)'; g.beginPath(); g.ellipse(cx-s*0.06,cy-s*0.07,s*0.07,s*0.1,-0.3,0,TAU); g.fill();
+    g.fillStyle='rgba(150,120,80,.5)';
+    for(const o of [[-0.05,-0.02],[0.07,0.06],[-0.02,0.12],[0.05,-0.09]]){ g.beginPath(); g.arc(cx+o[0]*s,cy+o[1]*s,s*0.025,0,TAU); g.fill(); }
+    return;
+  }
 }
 
 /* NPC 與事件鳥 */
@@ -725,10 +809,62 @@ function drawPheasant(g,cx,cy,h){
   g.beginPath(); g.arc(cx+R*1.2,cy-R*1.1,h*0.035,0,TAU); g.fill();
   g.restore();
 }
+function drawPitta(g,cx,cy,h){
+  const R=h*0.34; g.save();
+  g.fillStyle='#2f6fc0'; g.beginPath(); g.ellipse(cx-R*0.9,cy+R*0.1,R*0.35,R*0.25,0,0,TAU); g.fill();
+  g.beginPath(); g.ellipse(cx,cy,R*0.95,R*0.85,0,0,TAU); g.fillStyle='#d9b27a'; g.fill();
+  g.beginPath(); g.ellipse(cx-R*0.2,cy-R*0.2,R*0.8,R*0.55,-0.2,0,TAU); g.fillStyle='#3fae54'; g.fill();
+  g.beginPath(); g.ellipse(cx-R*0.25,cy+R*0.05,R*0.4,R*0.3,-0.2,0,TAU); g.fillStyle='#2f6fc0'; g.fill();
+  g.beginPath(); g.arc(cx+R*0.2,cy+R*0.55,R*0.25,0,TAU); g.fillStyle='#d23b2e'; g.fill();
+  const hx=cx+R*0.55,hy=cy-R*0.45,hr=h*0.2;
+  g.beginPath(); g.arc(hx,hy,hr,0,TAU); g.fillStyle='#caa46a'; g.fill();
+  g.strokeStyle='#222'; g.lineWidth=hr*0.4; g.beginPath(); g.moveTo(hx-hr*0.6,hy-hr*0.1); g.lineTo(hx+hr*0.85,hy-hr*0.1); g.stroke();
+  g.beginPath(); g.arc(hx+hr*0.3,hy-hr*0.15,hr*0.16,0,TAU); g.fillStyle='#111'; g.fill();
+  g.fillStyle='#3a3a3a'; g.beginPath(); g.moveTo(hx+hr*0.7,hy); g.lineTo(hx+hr*1.5,hy+hr*0.15); g.lineTo(hx+hr*0.7,hy+hr*0.4); g.closePath(); g.fill();
+  g.restore();
+}
+function drawSpoonbill(g,cx,cy,h){
+  const R=h*0.3; g.save();
+  g.strokeStyle='#222'; g.lineWidth=Math.max(1.5,h*0.04); g.lineCap='round';
+  g.beginPath(); g.moveTo(cx-R*0.2,cy+R*0.7); g.lineTo(cx-R*0.2,cy+R*1.3); g.moveTo(cx+R*0.2,cy+R*0.7); g.lineTo(cx+R*0.2,cy+R*1.3); g.stroke();
+  g.beginPath(); g.ellipse(cx,cy,R*1.0,R*0.7,0,0,TAU); g.fillStyle='#f3f1ea'; g.fill();
+  g.fillStyle='#e6e3d8'; g.beginPath(); g.moveTo(cx-R*0.8,cy); g.lineTo(cx-R*1.5,cy-R*0.15); g.lineTo(cx-R*1.4,cy+R*0.3); g.closePath(); g.fill();
+  g.strokeStyle='#f3f1ea'; g.lineWidth=R*0.45;
+  g.beginPath(); g.moveTo(cx+R*0.6,cy-R*0.2); g.quadraticCurveTo(cx+R*1.0,cy-R*1.0,cx+R*1.4,cy-R*0.9); g.stroke();
+  g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(cx+R*1.45,cy-R*0.9,R*0.3,0,TAU); g.fill();
+  g.strokeStyle='#1a1a1a'; g.lineWidth=R*0.18; g.beginPath(); g.moveTo(cx+R*1.7,cy-R*0.85); g.lineTo(cx+R*2.4,cy-R*0.7); g.stroke();
+  g.fillStyle='#1a1a1a'; g.beginPath(); g.ellipse(cx+R*2.5,cy-R*0.68,R*0.24,R*0.16,0.2,0,TAU); g.fill();
+  g.restore();
+}
+function drawIbis(g,cx,cy,h){
+  const R=h*0.3; g.save();
+  g.beginPath(); g.ellipse(cx,cy,R*1.0,R*0.72,0,0,TAU); g.fillStyle='#f0eee6'; g.fill();
+  g.fillStyle='#222'; g.beginPath(); g.moveTo(cx-R*0.7,cy); g.lineTo(cx-R*1.5,cy+R*0.1); g.lineTo(cx-R*1.3,cy+R*0.4); g.closePath(); g.fill();
+  g.strokeStyle='#1a1a1a'; g.lineWidth=R*0.4; g.lineCap='round';
+  g.beginPath(); g.moveTo(cx+R*0.6,cy-R*0.1); g.quadraticCurveTo(cx+R*1.1,cy-R*0.8,cx+R*1.5,cy-R*0.7); g.stroke();
+  g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(cx+R*1.5,cy-R*0.7,R*0.26,0,TAU); g.fill();
+  g.strokeStyle='#1a1a1a'; g.lineWidth=R*0.13; g.beginPath(); g.moveTo(cx+R*1.7,cy-R*0.6); g.quadraticCurveTo(cx+R*2.4,cy-R*0.3,cx+R*2.3,cy+R*0.4); g.stroke();
+  g.lineWidth=Math.max(1.5,h*0.035); g.beginPath(); g.moveTo(cx-R*0.1,cy+R*0.7); g.lineTo(cx-R*0.1,cy+R*1.2); g.moveTo(cx+R*0.3,cy+R*0.7); g.lineTo(cx+R*0.3,cy+R*1.2); g.stroke();
+  g.restore();
+}
+function drawJunk(g,x,y,s){
+  g.save();
+  roundRect(g,x+1.5,y+1.5,s-3,s-3,Math.max(4,s*0.18));
+  g.fillStyle='#b9bcc0'; g.fill();
+  g.lineWidth=1.4; g.strokeStyle='#8d9196'; g.stroke();
+  const cx=x+s*0.5, cy=y+s*0.5;
+  g.fillStyle='#3a3a3a'; g.beginPath(); g.arc(cx-s*0.05,cy-s*0.05,s*0.16,0,TAU); g.fill();
+  g.strokeStyle='#3a3a3a'; g.lineWidth=s*0.07; g.lineCap='round';
+  g.beginPath(); g.moveTo(cx+s*0.08,cy-s*0.02); g.quadraticCurveTo(cx+s*0.28,cy+s*0.05,cx+s*0.24,cy+s*0.24); g.stroke();
+  g.restore();
+}
 function drawEntity(e){
   if(e.kind==='magpie'){ drawMagpie(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*1.4); return; }
   if(e.kind==='raptorFlock'){ drawRaptorFlock(e); return; }
   if(e.kind==='pheasant'){ drawPheasant(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*2.0); return; }
+  if(e.kind==='pitta'){ drawPitta(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*1.7); return; }
+  if(e.kind==='spoonbill'){ drawSpoonbill(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*2.0); return; }
+  if(e.kind==='ibis'){ drawIbis(ctx, e.x*CELL+CELL/2, e.y*CELL+CELL/2, CELL*2.0); return; }
   if(e.kind==='feast'){ ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,e.life)); drawBird(ctx, e.x*CELL, e.y*CELL, CELL, 0, false); ctx.restore(); return; }
   const col=Math.max(0,Math.min(COLS-1,Math.round(e.col)));
   const top=surfaceTop(col);
@@ -750,7 +886,9 @@ function render(){
   for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(COLS*CELL,r*CELL);ctx.stroke();}
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const cell=grid[r][c]; if(!cell) continue;
-    if(cell.t==='food') drawFood(ctx,c*CELL,r*CELL,CELL,cell.food); else drawBird(ctx,c*CELL,r*CELL,CELL,cell.sp,false);
+    if(cell.t==='food') drawFood(ctx,c*CELL,r*CELL,CELL,cell.food);
+    else if(cell.t==='junk') drawJunk(ctx,c*CELL,r*CELL,CELL);
+    else drawBird(ctx,c*CELL,r*CELL,CELL,cell.sp,false);
   }
   if(piece){
     for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)
@@ -760,6 +898,14 @@ function render(){
       }}
   }
   for(const e of entities) drawEntity(e);
+  if(typhoonActive){
+    ctx.save();
+    ctx.fillStyle='rgba(90,100,115,.12)'; ctx.fillRect(0,0,COLS*CELL,ROWS*CELL);
+    ctx.strokeStyle='rgba(110,120,135,.45)'; ctx.lineWidth=2; ctx.lineCap='round';
+    const off=(performance.now()/6)%(CELL*3);
+    for(let i=-1;i<ROWS;i+=2){ const yy=i*CELL+off; ctx.beginPath(); ctx.moveTo(0,yy); ctx.lineTo(COLS*CELL, yy - windDir*24); ctx.stroke(); }
+    ctx.restore();
+  }
   if(nightActive){
     ctx.fillStyle='rgba(20,26,64,.36)'; ctx.fillRect(0,0,COLS*CELL,ROWS*CELL);
     ctx.fillStyle='#f5f0c0'; ctx.beginPath(); ctx.arc(COLS*CELL-CELL*1.3, CELL*1.2, CELL*0.62,0,TAU); ctx.fill();
@@ -842,7 +988,8 @@ function onTermChange(announce){
   if(announce){
     const i=termIndex();
     showFlash(SEASON_EMOJI[seasonOf()]+' 節氣・'+SOLAR_TERMS[i]+' — '+TERM_NOTE[i], SEASON_COLOR[seasonOf()]);
-    beep(560,0.12,'sine');
+    call('chirp');
+    if(i===21 && running && !solsticeDone){ solsticeDone=true; setTimeout(winterSolsticeRelief, 700); }
   }
 }
 function updateParticles(dt){
