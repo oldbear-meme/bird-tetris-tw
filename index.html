@@ -45,6 +45,14 @@
     background:#fff; font-size:17px; color:var(--ink); cursor:pointer;}
   .pauseBtn:active{transform:translateY(2px);}
 
+  .seasonBar{font-size:13px; font-weight:700; padding:3px 16px; border-radius:999px;
+    letter-spacing:2px; border:1.5px solid var(--line); color:#5f5a45;
+    box-shadow:0 2px 6px rgba(60,50,20,.10); transition:background .6s, border-color .6s;}
+  .seasonBar.s0{background:#e9f6e4; border-color:#bcdca0;}
+  .seasonBar.s1{background:#fff2cf; border-color:#f0d488;}
+  .seasonBar.s2{background:#fae3c8; border-color:#e6b478;}
+  .seasonBar.s3{background:#e4eef7; border-color:#a9c6e2;}
+
   .boardWrap{position:relative; border-radius:12px; overflow:hidden;
     box-shadow:0 8px 22px rgba(60,50,20,.22); border:4px solid #fff; touch-action:none;}
   #board{display:block; background:#f4efe0; touch-action:none;}
@@ -113,6 +121,8 @@
     <button class="pauseBtn" id="pauseBtn" title="暫停">⏸</button>
   </div>
 
+  <div class="seasonBar s0" id="seasonBar">🌸 立春</div>
+
   <div class="boardWrap">
     <canvas id="board"></canvas>
     <div class="flash" id="flash"></div>
@@ -148,7 +158,8 @@
       💎 <b>帝雉</b>等稀有鳥偶爾現身<b>大加分</b>，並永久記入上方<b>圖鑑</b>。<br>
       🍴 食物有 🪱蚯蚓・🌸花蜜・🫐藍莓・🌾穀子，餵給<b>對味的鳥</b>那一列<b>加倍分</b>！<br>
       🫐 <b>白頭翁碰到藍莓</b>會觸發「<b>藍莓盛宴</b>」，方塊<b>大量消失</b>＋大加分！<br>
-      <span style="opacity:.7">（花蜜→綠繡眼、藍莓→白頭翁、穀子→麻雀）</span>
+      <span style="opacity:.7">（花蜜→綠繡眼、藍莓→白頭翁、穀子→麻雀）</span><br>
+      🌗 <b>24 節氣場景</b>：每升一級換一個節氣，背景隨春櫻🌸・夏陽☀️・秋楓🍁・冬雪❄️變化，鳥兒行為也跟著季節改變！
     </div>
     <div class="controls">
       <b>手機：</b>◀▶ 可<b>長按連續移動</b>，↻ 旋轉、⤓ 直接落下。<br>
@@ -198,6 +209,26 @@ function loadDex(){ try{ return new Set(JSON.parse(localStorage.getItem('birdDex
 function saveDex(){ try{ localStorage.setItem('birdDex', JSON.stringify([...dex])); }catch(e){} }
 let dex = loadDex();
 
+/* ============ 24 節氣 ============ */
+const SOLAR_TERMS = ['立春','雨水','驚蟄','春分','清明','穀雨','立夏','小滿','芒種','夏至','小暑','大暑','立秋','處暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至','小寒','大寒'];
+const TERM_NOTE = [
+  '春之始，鳥兒開始鳴唱求偶','春雨綿綿，蚯蚓紛紛冒出','春雷驚醒蟄蟲，蟲食大增','晝夜均分，群鳥忙築巢','細雨紛飛，燕子歸來','雨生百穀，食物豐沛',
+  '夏之始，綠繡眼忙採花蜜','萬物漸盈，花蜜盛產','梅雨時節，鳥兒躲雨','日最長，烈日當空','暑氣漸盛，鳥兒納涼喘息','一年最熱，午後雷陣雨',
+  '秋之始，候鳥準備南遷','暑氣將退，灰面鵟鷹集結','露珠晶瑩，過境鷹群增多','晝夜再均分，候鳥大舉過境','國慶鳥過境高峰','初霜降臨，葉落紛紛',
+  '冬之始，黑面琵鷺南下度冬','北方下雪，食物漸少','雪花飛舞，覓食不易','日最短，群鳥相依取暖','天寒地凍，椋鳥更積極搶食','一年最冷，撐過寒冬迎新春'
+];
+const SEASON_EMOJI = ['🌸','☀️','🍁','❄️'];
+const SEASON_COLOR = ['#7aa83c','#e0902e','#c8702e','#3f6cb0'];
+const BOARD_BG = [['#eef7ea','#f4efe0'],['#eef6ff','#f5efdf'],['#f7eede','#f2e6d2'],['#eef3f8','#eaeef1']];
+const BODY_BG = [
+  'linear-gradient(180deg,#cde8d8 0%,#eef7e6 58%,#f3ecd8 100%)',
+  'linear-gradient(180deg,#bfe3f2 0%,#e9f7e6 58%,#f3ecd8 100%)',
+  'linear-gradient(180deg,#f1dcc0 0%,#f6ecd6 58%,#f1e6cf 100%)',
+  'linear-gradient(180deg,#d6e6f0 0%,#eef3f7 58%,#eef0ea 100%)'
+];
+function termIndex(){ return (level-1)%24; }
+function seasonOf(){ return Math.floor(termIndex()/6)%4; }
+
 /* ============ 方塊形狀 ============ */
 const SHAPES = {
   I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -217,6 +248,7 @@ let bag=[];
 let entities=[];
 let foodTimer=0, npcStarlingDone=false, npcDumbDone=false, magpieTimer=0;
 let nightActive=false, nightTimer=0, nightRemain=0, raptorTimer=0, pheasantTimer=0;
+let curTerm=-1, particles=[], particleType='petal';
 
 function newGrid(){ return Array.from({length:ROWS},()=>Array(COLS).fill(null)); }
 function refillBag(){ bag = KEYS.slice(); for(let i=bag.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[bag[i],bag[j]]=[bag[j],bag[i]];} }
@@ -244,6 +276,7 @@ function reset(){
   nightActive=false; nightTimer=26000; nightRemain=0;
   raptorTimer=60000; pheasantTimer=46000;
   over=false; paused=false;
+  curTerm=termIndex(); particles=[]; updateScene();
   piece=newPiece(); nextPiece=newPiece();
   updateHUD(); updateDexHUD(); drawNext();
 }
@@ -365,7 +398,8 @@ function clearLines(){
   }
 }
 function spawnFood(){
-  const food=FOODS[(Math.random()*FOODS.length)|0];
+  let food=FOODS[(Math.random()*FOODS.length)|0];
+  if(seasonOf()===1 && Math.random()<0.5) food='nectar';   // 夏：花蜜盛產
   const cols=[...Array(COLS).keys()].sort(()=>Math.random()-0.5);
   for(const c of cols){
     let top=ROWS; for(let r=0;r<ROWS;r++){ if(grid[r][c]){ top=r; break; } }
@@ -397,7 +431,7 @@ function updatePatrol(e,dt){
     const dir=Math.sign(target-e.col);
     if(Math.abs(target-e.col)<0.12){
       for(let r=0;r<ROWS;r++) if(grid[r][target]&&grid[r][target].t==='food'){ grid[r][target]=null; e.eat++; beep(160,0.05); showFlash((e.kind==='starling'?'黑領椋鳥':'大笨鳥')+'搶走了食物！','#a5512f'); break; }
-    } else { e.col += dir*e.speed*dt; }
+    } else { e.col += dir*e.speed*(seasonOf()===3?1.4:1)*dt; }
   }
   e.col=Math.max(0.5,Math.min(COLS-0.5,e.col));
 }
@@ -443,12 +477,15 @@ function pheasantEvent(){
 
 /* ============ 主迴圈邏輯 ============ */
 function step(dt){
+  const t=termIndex(); if(t!==curTerm){ curTerm=t; onTermChange(true); }
+  updateParticles(dt);
+
   const interval = dropMs * (nightActive?1.5:1);
   dropAcc+=dt*1000;
   if(dropAcc>=interval){ dropAcc=0; softDrop(false); }
 
   foodTimer-=dt*1000;
-  if(foodTimer<=0){ spawnFood(); foodTimer=4200 - Math.min(2000,level*180); }
+  if(foodTimer<=0){ spawnFood(); const sn=seasonOf(); foodTimer=(4200 - Math.min(2000,level*180)) * (sn===0?0.6 : sn===3?1.55 : 1); }
 
   if(!npcDumbDone && level>=2){ spawnPatrol('dumb'); npcDumbDone=true; }
   if(!npcStarlingDone && level>=3){ spawnPatrol('starling'); npcStarlingDone=true; }
@@ -461,7 +498,7 @@ function step(dt){
     else { nightRemain-=dt*1000; if(nightRemain<=0) endNight(); }
     pheasantTimer-=dt*1000; if(pheasantTimer<=0){ pheasantEvent(); pheasantTimer=70000; }
   }
-  if(level>=3){ raptorTimer-=dt*1000; if(raptorTimer<=0){ raptorEvent(); raptorTimer=58000; } }
+  if(level>=3){ raptorTimer-=dt*1000; if(raptorTimer<=0){ raptorEvent(); raptorTimer = seasonOf()===2 ? 30000 : 58000; } }
 
   entities=entities.filter(e=>{
     if(e.kind==='magpie') return updateMagpie(e,dt);
@@ -703,7 +740,11 @@ function drawEntity(e){
 
 function render(){
   ctx.clearRect(0,0,COLS*CELL,ROWS*CELL);
-  ctx.fillStyle='#f4efe0'; ctx.fillRect(0,0,COLS*CELL,ROWS*CELL);
+  const bg=BOARD_BG[seasonOf()];
+  const grad=ctx.createLinearGradient(0,0,0,ROWS*CELL); grad.addColorStop(0,bg[0]); grad.addColorStop(1,bg[1]);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,COLS*CELL,ROWS*CELL);
+  if(seasonOf()===1) drawSun();
+  drawParticles();
   ctx.strokeStyle='rgba(150,140,110,.12)'; ctx.lineWidth=1;
   for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,ROWS*CELL);ctx.stroke();}
   for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(COLS*CELL,r*CELL);ctx.stroke();}
@@ -787,6 +828,60 @@ function drawCover(){
   g.moveTo(cx+14,cy+R*0.82); g.lineTo(cx+14,cy+R*1.10); g.stroke();
 }
 
+/* ============ 24 節氣場景 ============ */
+function updateScene(){
+  const s=seasonOf();
+  particleType = ['petal','none','leaf','snow'][s];
+  document.body.style.background = BODY_BG[s];
+  document.body.style.backgroundAttachment = 'fixed';
+  const bar=document.getElementById('seasonBar');
+  if(bar){ bar.textContent = SEASON_EMOJI[s]+' '+SOLAR_TERMS[termIndex()]; bar.className='seasonBar s'+s; }
+}
+function onTermChange(announce){
+  updateScene();
+  if(announce){
+    const i=termIndex();
+    showFlash(SEASON_EMOJI[seasonOf()]+' 節氣・'+SOLAR_TERMS[i]+' — '+TERM_NOTE[i], SEASON_COLOR[seasonOf()]);
+    beep(560,0.12,'sine');
+  }
+}
+function updateParticles(dt){
+  if(particleType!=='none' && particles.length<42 && Math.random()<0.55){
+    particles.push({ x:Math.random()*COLS*CELL, y:-CELL*0.5,
+      vx:(Math.random()-0.5)*22, vy:30+Math.random()*45,
+      rot:Math.random()*TAU, vr:(Math.random()-0.5)*4,
+      sz:CELL*(0.16+Math.random()*0.16) });
+  }
+  for(const p of particles){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.rot+=p.vr*dt; }
+  particles=particles.filter(p=>p.y<ROWS*CELL+CELL && p.x>-CELL && p.x<COLS*CELL+CELL);
+}
+function drawParticles(){
+  for(const p of particles){
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    if(particleType==='petal'){
+      ctx.fillStyle='rgba(246,176,201,.85)';
+      ctx.beginPath(); ctx.ellipse(0,0,p.sz,p.sz*0.58,0,0,TAU); ctx.fill();
+    } else if(particleType==='leaf'){
+      ctx.fillStyle='rgba(212,132,52,.85)';
+      ctx.beginPath(); ctx.ellipse(0,0,p.sz,p.sz*0.5,0,0,TAU); ctx.fill();
+      ctx.strokeStyle='rgba(140,82,28,.5)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(-p.sz,0); ctx.lineTo(p.sz,0); ctx.stroke();
+    } else if(particleType==='snow'){
+      ctx.fillStyle='rgba(255,255,255,.92)';
+      ctx.beginPath(); ctx.arc(0,0,p.sz*0.5,0,TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+function drawSun(){
+  const x=CELL*1.4, y=CELL*1.2, r=CELL*0.5;
+  ctx.save();
+  ctx.strokeStyle='rgba(255,206,90,.55)'; ctx.lineWidth=2;
+  for(let i=0;i<8;i++){ const a=i/8*TAU; ctx.beginPath(); ctx.moveTo(x+Math.cos(a)*r*1.25,y+Math.sin(a)*r*1.25); ctx.lineTo(x+Math.cos(a)*r*1.6,y+Math.sin(a)*r*1.6); ctx.stroke(); }
+  ctx.fillStyle='rgba(255,210,92,.85)'; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+  ctx.restore();
+}
+
 /* ============ 響應式版面 ============ */
 const headerEl=document.querySelector('header');
 const hudEl=document.getElementById('hud');
@@ -802,6 +897,7 @@ function layout(){
   let cell = Math.floor(Math.min(availW/COLS, availH/ROWS));
   cell = Math.max(12, Math.min(cell, 38));
   CELL = cell;
+  particles.length=0;
   board.width=COLS*CELL*DPR; board.height=ROWS*CELL*DPR;
   board.style.width=COLS*CELL+'px'; board.style.height=ROWS*CELL+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
