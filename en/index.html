@@ -103,6 +103,20 @@
     pointer-events:none; opacity:0; transition:opacity .25s;}
   .flash.show{opacity:1;}
   footer{font-size:11px; color:#8a8267; margin-top:4px; text-align:center;}
+
+  /* ─── Mobile full-screen: hide non-essential elements, tighten spacing ─── */
+  @media (pointer:coarse){
+    header{display:none!important;}
+    #app{gap:4px;padding:4px 4px calc(10px + env(safe-area-inset-bottom));}
+    .hud{padding:3px 7px;border-radius:8px;border-width:1.5px;}
+    .hud .stat b{font-size:14px;} .hud .stat span{font-size:8px;}
+    .hud .stat.dex b{font-size:12px;} .nextWrap span{font-size:8px;}
+    .pauseBtn{width:34px;height:34px;flex:0 0 34px;font-size:14px;border-radius:8px;}
+    .seasonBar{font-size:11px;padding:2px 10px;letter-spacing:1px;border-width:1px;margin:0;}
+    .legendBox,footer{display:none!important;}
+    .tbtn{height:56px;border-radius:14px;}
+    .pad{gap:8px;max-width:100%;margin-top:0;}
+  }
 </style>
 </head>
 <body>
@@ -179,7 +193,7 @@
 /* ============ 基本設定 ============ */
 const COLS = 10, ROWS = 20;
 let CELL = 30;
-const NS = 54;
+let NS = 54;
 const board = document.getElementById('board');
 const nextCv = document.getElementById('next');
 const ctx = board.getContext('2d');
@@ -1033,22 +1047,30 @@ function drawSun(){
 const headerEl=document.querySelector('header');
 const hudEl=document.getElementById('hud');
 const padEl=document.getElementById('pad');
+const seasonBarEl=document.getElementById('seasonBar');
 function layout(){
   const vw=document.documentElement.clientWidth || window.innerWidth;
   const vh=window.innerHeight;
   const padVisible = getComputedStyle(padEl).display!=='none';
+  const sbH = seasonBarEl ? seasonBarEl.offsetHeight : 0;
   const reserve = (headerEl?headerEl.offsetHeight:0) + (hudEl?hudEl.offsetHeight:0)
-                + (padVisible?padEl.offsetHeight:0) + 46;
+                + (padVisible?padEl.offsetHeight:0) + sbH + 20;
   const availH = Math.max(160, vh - reserve);
-  const availW = Math.min(vw-12, 520);
+  const availW = Math.min(vw-8, 520);
   let cell = Math.floor(Math.min(availW/COLS, availH/ROWS));
-  cell = Math.max(12, Math.min(cell, 38));
+  cell = Math.max(12, Math.min(cell, 40));
   CELL = cell;
+  /* dynamically resize next-piece canvas */
+  NS = window.matchMedia('(pointer:coarse)').matches ? 42 : 54;
+  nextCv.width=NS*DPR; nextCv.height=NS*DPR;
+  nextCv.style.width=NS+'px'; nextCv.style.height=NS+'px';
+  nctx.setTransform(DPR,0,0,DPR,0,0);
   particles.length=0;
   board.width=COLS*CELL*DPR; board.height=ROWS*CELL*DPR;
   board.style.width=COLS*CELL+'px'; board.style.height=ROWS*CELL+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(grid) render();
+  if(nextPiece) drawNext();
 }
 window.addEventListener('resize', layout);
 window.addEventListener('orientationchange', ()=>setTimeout(layout,150));
